@@ -1,8 +1,9 @@
 #include "waves.h"
-
 #include <QtQuick/qquickwindow.h>
-WavesRenderer::WavesRenderer() {
+using std::vector;
 
+WavesRenderer::WavesRenderer() {
+    m_quads = new CPGLQuads();
 }
 
 WavesRenderer::~WavesRenderer() {
@@ -30,21 +31,48 @@ void WavesRenderer::setModelViewMatrices(double zoom, double tilt, double pan, d
     m_modelViewMatrix.rotate(tilt, 1, 0, 0);
     m_modelViewMatrix.rotate(pan, 0, 0, 1);
     m_modelViewMatrix.rotate(roll, 0, 1, 0);
+
+    float systemSizeMax = 1.0;
+    m_lightModelViewMatrix.setToIdentity();
+    m_lightModelViewMatrix.translate(0,0,-systemSizeMax / 2.0);
+    m_lightModelViewMatrix.rotate(-90, 1, 0, 0);
+    m_lightModelViewMatrix.rotate(tilt, 1, 0, 0);
+    m_lightModelViewMatrix.rotate(pan, 0, 0, 1);
+    m_lightModelViewMatrix.rotate(roll, 0, 1, 0);
 }
 
 void WavesRenderer::paint() {
+    glViewport(0, 0, m_viewportSize.width(), m_viewportSize.height());
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+
+    glClearColor(0, 0, 0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
+    QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
+
+    m_quads->setModelViewMatrix(m_modelViewMatrix);
+    m_quads->render(1.0, modelViewProjectionMatrix, lightModelViewProjectionMatrix);
+
+    glDepthMask(GL_TRUE);
 }
-Simulator WavesRenderer::simulator() const
+CPGLQuads *WavesRenderer::quads() const
 {
-    return m_simulator;
+    return m_quads;
 }
 
-void WavesRenderer::setSimulator(const Simulator &simulator)
+void Waves::step(double dt)
 {
-    m_simulator = simulator;
+    if(!m_previousStepCompleted) {
+        return;
+    }
+    if(window()) {
+        window()->update();
+    }
+    m_previousStepCompleted = false;
 }
-
 
 Waves::Waves()
     : m_renderer(0),
@@ -52,7 +80,8 @@ Waves::Waves()
       m_tilt(0),
       m_pan(0),
       m_roll(0),
-      m_running(true)
+      m_running(true),
+      m_previousStepCompleted(true)
 {
     connect(this, SIGNAL(windowChanged(QQuickWindow*)), this, SLOT(handleWindowChanged(QQuickWindow*)));
     m_timer.start();
@@ -61,26 +90,6 @@ Waves::Waves()
 Waves::~Waves()
 {
     cleanup();
-}
-
-double Waves::tilt() const
-{
-
-}
-
-double Waves::pan() const
-{
-
-}
-
-double Waves::roll() const
-{
-
-}
-
-double Waves::zoom() const
-{
-
 }
 
 void Waves::sync()
@@ -94,9 +103,18 @@ void Waves::sync()
     m_renderer->resetProjection();
     m_renderer->setModelViewMatrices(m_zoom, m_tilt, m_pan, m_roll);
 
+    double dt = m_timer.restart() / 1000.0;
+    double safeDt = std::min(0.02, dt);
+    vector<QVector3D> positions = {QVector3D(0,0,0)};
+
+    m_renderer->quads()->update(positions);
+
     if(m_running) {
         // Step if running
+        m_simulator.step(safeDt);
     }
+
+    m_previousStepCompleted = true;
 }
 
 void Waves::cleanup()
@@ -117,3 +135,13 @@ void Waves::handleWindowChanged(QQuickWindow *win)
         win->setClearBeforeRendering(false);
     }
 }
+Simulator Waves::simulator() const
+{
+    return m_simulator;
+}
+
+void Waves::setSimulator(const Simulator &simulator)
+{
+    m_simulator = simulator;
+}
+

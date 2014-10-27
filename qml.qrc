@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>main.qml</file>
         <file>Waves.qml</file>
     </qresource>
 </RCC>

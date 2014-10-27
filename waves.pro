@@ -6,7 +6,8 @@ CONFIG += c++11
 
 SOURCES += main.cpp \
     waves.cpp \
-    simulator.cpp
+    simulator.cpp \
+    cpglquads.cpp
 
 RESOURCES += qml.qrc
 
@@ -18,4 +19,5 @@ include(deployment.pri)
 
 HEADERS += \
     waves.h \
-    simulator.h
+    simulator.h \
+    cpglquads.h

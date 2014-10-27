@@ -6,6 +6,7 @@
 #include <QMatrix4x4>
 
 #include "simulator.h"
+#include "cpglquads.h"
 
 class WavesRenderer : public QObject {
     Q_OBJECT
@@ -15,8 +16,8 @@ public:
     void setViewportSize(const QSize &size) { m_viewportSize = size; }
     void resetProjection();
     void setModelViewMatrices(double zoom, double tilt, double pan, double roll);
-    Simulator simulator() const;
-    void setSimulator(const Simulator &simulator);
+
+    CPGLQuads *quads() const;
 
 public slots:
     void paint();
@@ -25,7 +26,8 @@ private:
     QSize m_viewportSize;
     QMatrix4x4 m_projectionMatrix;
     QMatrix4x4 m_modelViewMatrix;
-    Simulator  m_simulator;
+    QMatrix4x4 m_lightModelViewMatrix;
+    CPGLQuads  *m_quads;
 };
 
 class Waves : public QQuickItem
@@ -36,34 +38,113 @@ class Waves : public QQuickItem
     Q_PROPERTY(double pan READ pan WRITE setPan NOTIFY panChanged)
     Q_PROPERTY(double roll READ roll WRITE setRoll NOTIFY rollChanged)
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
-
+    Q_PROPERTY(bool previousStepCompleted READ previousStepCompleted NOTIFY previousStepCompletedChanged)
 public:
+    Q_INVOKABLE void step(double dt);
     Waves();
     ~Waves();
-    double tilt() const;
-    double pan() const;
-    double roll() const;
-    double zoom() const;
-    bool running() const;
+
+    float zoom() const
+    {
+        return m_zoom;
+    }
+
+    double tilt() const
+    {
+        return m_tilt;
+    }
+
+    double pan() const
+    {
+        return m_pan;
+    }
+
+    double roll() const
+    {
+        return m_roll;
+    }
+
+    bool running() const
+    {
+        return m_running;
+    }
+
+    Simulator simulator() const;
+    void setSimulator(const Simulator &simulator);
+
+    bool previousStepCompleted() const
+    {
+        return m_previousStepCompleted;
+    }
 
 public slots:
     void sync();
     void cleanup();
-    void setTilt(double arg);
-    void setPan(double arg);
-    void setRoll(double arg);
-    void setZoom(double arg);
-    void setRunning(bool arg);
+
+    void setZoom(float arg)
+    {
+        if (m_zoom == arg)
+            return;
+
+        m_zoom = arg;
+        emit zoomChanged(arg);
+    }
+
+    void setTilt(double arg)
+    {
+        if (m_tilt == arg)
+            return;
+
+        m_tilt = arg;
+        emit tiltChanged(arg);
+    }
+
+    void setPan(double arg)
+    {
+        if (m_pan == arg)
+            return;
+
+        m_pan = arg;
+        emit panChanged(arg);
+    }
+
+    void setRoll(double arg)
+    {
+        if (m_roll == arg)
+            return;
+
+        m_roll = arg;
+        emit rollChanged(arg);
+    }
+
+    void setRunning(bool arg)
+    {
+        if (m_running == arg)
+            return;
+
+        m_running = arg;
+        emit runningChanged(arg);
+    }
+
+signals:
+    void zoomChanged(float arg);
+
+    void tiltChanged(double arg);
+
+    void panChanged(double arg);
+
+    void rollChanged(double arg);
+
+    void runningChanged(bool arg);
+
+    void previousStepCompletedChanged(bool arg);
 
 private slots:
     void handleWindowChanged(QQuickWindow *win);
-signals:
-    void tiltChanged(double arg);
-    void panChanged(double arg);
-    void rollChanged(double arg);
-    void zoomChanged(double arg);
+
 private:
     WavesRenderer *m_renderer;
+    Simulator m_simulator;
     float m_zoom;
     float m_tilt;
     float m_pan;
@@ -71,6 +152,7 @@ private:
     bool  m_running;
     QElapsedTimer m_timer;
 
+    bool m_previousStepCompleted;
 };
 
 #endif // WAVES_H
