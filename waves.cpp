@@ -3,7 +3,7 @@
 using std::vector;
 
 WavesRenderer::WavesRenderer() {
-    m_quads = new CPGLQuads();
+
 }
 
 WavesRenderer::~WavesRenderer() {
@@ -53,14 +53,7 @@ void WavesRenderer::paint() {
     QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
     QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
 
-    m_quads->setModelViewMatrix(m_modelViewMatrix);
-    m_quads->render(1.0, modelViewProjectionMatrix, lightModelViewProjectionMatrix);
-
     glDepthMask(GL_TRUE);
-}
-CPGLQuads *WavesRenderer::quads() const
-{
-    return m_quads;
 }
 
 void Waves::step(double dt)
@@ -105,9 +98,6 @@ void Waves::sync()
 
     double dt = m_timer.restart() / 1000.0;
     double safeDt = std::min(0.02, dt);
-    vector<QVector3D> positions = {QVector3D(0,0,0)};
-
-    m_renderer->quads()->update(positions);
 
     if(m_running) {
         // Step if running

@@ -17,8 +17,6 @@ public:
     void resetProjection();
     void setModelViewMatrices(double zoom, double tilt, double pan, double roll);
 
-    CPGLQuads *quads() const;
-
 public slots:
     void paint();
 
@@ -27,7 +25,6 @@ private:
     QMatrix4x4 m_projectionMatrix;
     QMatrix4x4 m_modelViewMatrix;
     QMatrix4x4 m_lightModelViewMatrix;
-    CPGLQuads  *m_quads;
 };
 
 class Waves : public QQuickItem

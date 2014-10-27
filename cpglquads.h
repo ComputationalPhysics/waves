@@ -15,7 +15,7 @@ class CPGLQuads
 public:
     CPGLQuads();
     ~CPGLQuads();
-    void update(std::vector<QVector3D> &positions, std::vector<QVector3D> colors = {}, std::vector<float> scalings = {});
+    // void update(std::vector<QVector3D> &positions, std::vector<QVector3D> colors = std::vector<QVector3D>{}, std::vector<float> scalings = std::vector<float> scalings{});
     void render(float lightFalloffDistance, const QMatrix4x4 &modelViewProjectionMatrix, const QMatrix4x4 &lightModelViewProjectionMatrix);
     void setModelViewMatrix(QMatrix4x4& matrix);
 private:

@@ -18,75 +18,75 @@ CPGLQuads::~CPGLQuads()
     if(m_program) delete m_program;
 }
 
-void CPGLQuads::update(std::vector<QVector3D> &positions, std::vector<QVector3D> colors, std::vector<float> scalings)
-{
-    ensureInitialized();
-    int numPoints = positions.size();
+//void CPGLQuads::update(std::vector<QVector3D> &positions, std::vector<QVector3D> colors, std::vector<float> scalings)
+//{
+//    ensureInitialized();
+//    int numPoints = positions.size();
 
-    QVector3D right;
-    right.setX(m_modelViewMatrix(0,0));
-    right.setY(m_modelViewMatrix(0,1));
-    right.setZ(m_modelViewMatrix(0,2));
-    QVector3D up;
-    up.setX(m_modelViewMatrix(1,0));
-    up.setY(m_modelViewMatrix(1,1));
-    up.setZ(m_modelViewMatrix(1,2));
+//    QVector3D right;
+//    right.setX(m_modelViewMatrix(0,0));
+//    right.setY(m_modelViewMatrix(0,1));
+//    right.setZ(m_modelViewMatrix(0,2));
+//    QVector3D up;
+//    up.setX(m_modelViewMatrix(1,0));
+//    up.setY(m_modelViewMatrix(1,1));
+//    up.setZ(m_modelViewMatrix(1,2));
 
-    QVector3D ul = (0.5*up - 0.5*right);
-    QVector3D ur = (0.5*up + 0.5*right);
-    QVector3D dl = (-0.5*up - 0.5*right);
-    QVector3D dr = (-0.5*up + 0.5*right);
+//    QVector3D ul = (0.5*up - 0.5*right);
+//    QVector3D ur = (0.5*up + 0.5*right);
+//    QVector3D dl = (-0.5*up - 0.5*right);
+//    QVector3D dr = (-0.5*up + 0.5*right);
 
-    int numberOfVertices = numPoints*4;
-    m_vertices.resize(numberOfVertices);
-    m_indices.resize(6*numPoints);
+//    int numberOfVertices = numPoints*4;
+//    m_vertices.resize(numberOfVertices);
+//    m_indices.resize(6*numPoints);
 
-    for(int i=0; i<numPoints; i++) {
-        // NOTE: Y and Z are swapped!
-        QVector3D &position = positions[i];
+//    for(int i=0; i<numPoints; i++) {
+//        // NOTE: Y and Z are swapped!
+//        QVector3D &position = positions[i];
 
-        float scale = 1.0;
-        if(scalings.size()) scale = scalings[i];
+//        float scale = 1.0;
+//        if(scalings.size()) scale = scalings[i];
 
-        m_vertices[4*i + 0].position = position + dl*scale;
-        m_vertices[4*i + 0].textureCoord= QVector2D(0,1);
+//        m_vertices[4*i + 0].position = position + dl*scale;
+//        m_vertices[4*i + 0].textureCoord= QVector2D(0,1);
 
-        m_vertices[4*i + 1].position = position + dr*scale;
-        m_vertices[4*i + 1].textureCoord= QVector2D(1,1);
+//        m_vertices[4*i + 1].position = position + dr*scale;
+//        m_vertices[4*i + 1].textureCoord= QVector2D(1,1);
 
-        m_vertices[4*i + 2].position = position + ur*scale;
-        m_vertices[4*i + 2].textureCoord= QVector2D(1,0);
+//        m_vertices[4*i + 2].position = position + ur*scale;
+//        m_vertices[4*i + 2].textureCoord= QVector2D(1,0);
 
-        m_vertices[4*i + 3].position = position + ul*scale;
-        m_vertices[4*i + 3].textureCoord= QVector2D(0,0);
+//        m_vertices[4*i + 3].position = position + ul*scale;
+//        m_vertices[4*i + 3].textureCoord= QVector2D(0,0);
 
-        QVector3D color(1.0, 1.0, 1.0);
-        if(colors.size()) {
-            color = colors[i];
-        }
+//        QVector3D color(1.0, 1.0, 1.0);
+//        if(colors.size()) {
+//            color = colors[i];
+//        }
 
-        m_vertices[4*i + 0].color = color;
-        m_vertices[4*i + 1].color = color;
-        m_vertices[4*i + 2].color = color;
-        m_vertices[4*i + 3].color = color;
+//        m_vertices[4*i + 0].color = color;
+//        m_vertices[4*i + 1].color = color;
+//        m_vertices[4*i + 2].color = color;
+//        m_vertices[4*i + 3].color = color;
 
-        m_indices [6*i + 0] = 4*i+0;
-        m_indices [6*i + 1] = 4*i+1;
-        m_indices [6*i + 2] = 4*i+2;
+//        m_indices [6*i + 0] = 4*i+0;
+//        m_indices [6*i + 1] = 4*i+1;
+//        m_indices [6*i + 2] = 4*i+2;
 
-        m_indices [6*i + 3] = 4*i+2;
-        m_indices [6*i + 4] = 4*i+3;
-        m_indices [6*i + 5] = 4*i+0;
-    }
+//        m_indices [6*i + 3] = 4*i+2;
+//        m_indices [6*i + 4] = 4*i+3;
+//        m_indices [6*i + 5] = 4*i+0;
+//    }
 
-    // Transfer vertex data to VBO 0
-    m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-    m_funcs->glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(VertexData), &m_vertices[0], GL_STATIC_DRAW);
+//    // Transfer vertex data to VBO 0
+//    m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
+//    m_funcs->glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(VertexData), &m_vertices[0], GL_STATIC_DRAW);
 
-    // Transfer index data to VBO 1
-    m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
-    m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
-}
+//    // Transfer index data to VBO 1
+//    m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
+//    m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
+//}
 
 void CPGLQuads::setModelViewMatrix(QMatrix4x4 &matrix)
 {

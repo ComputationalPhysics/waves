@@ -4,10 +4,14 @@ TARGET = waves
 QT += qml quick widgets opengl openglextensions
 CONFIG += c++11
 
+QMAKE_CXXFLAGS += -stdlib=libc++
+
 SOURCES += main.cpp \
     waves.cpp \
     simulator.cpp \
-    cpglquads.cpp
+    cpglquads.cpp \
+    cpgrid.cpp \
+    wavesolver.cpp
 
 RESOURCES += qml.qrc
 
@@ -20,4 +24,6 @@ include(deployment.pri)
 HEADERS += \
     waves.h \
     simulator.h \
-    cpglquads.h
+    cpglquads.h \
+    cpgrid.h \
+    wavesolver.h
