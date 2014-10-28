@@ -10,7 +10,7 @@ Item {
         anchors.fill: parent
         pan: 30
         tilt: 30
-        zoom: -40
+        zoom: -5
 
         PinchArea {
             id: pinchArea

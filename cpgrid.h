@@ -69,14 +69,14 @@ public:
     void resize(int gridSize, float rMin, float rMax);
 
     float &operator()(int i, int j, bool periodicBoundary) {
-        return m_vertices[index(i, j)].position[2];
+        return m_vertices[index(idx(i), idx(j))].position[2];
     }
     float &operator()(int i, int j) {
-        return m_vertices[index(idx(i), idx(j))].position[2];
+        return m_vertices[index(i, j)].position[2];
     }
 
     void zeros();
-    void renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix);
+    void renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4 &modelViewMatrix);
     void calculateNormals();
     std::vector<CPPoint> vertices() const;
     void setVertices(const std::vector<CPPoint> &vertices);

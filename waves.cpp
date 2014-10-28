@@ -1,8 +1,11 @@
 #include "waves.h"
 #include <QtQuick/qquickwindow.h>
+#include <cmath>
 using std::vector;
 
-WavesRenderer::WavesRenderer() {
+WavesRenderer::WavesRenderer() :
+    m_simulator(0)
+{
 
 }
 
@@ -52,9 +55,20 @@ void WavesRenderer::paint() {
 
     QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
     QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
+    m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
 
     glDepthMask(GL_TRUE);
 }
+Simulator *WavesRenderer::simulator() const
+{
+    return m_simulator;
+}
+
+void WavesRenderer::setSimulator(Simulator *simulator)
+{
+    m_simulator = simulator;
+}
+
 
 void Waves::step()
 {
@@ -69,7 +83,7 @@ void Waves::step()
 
 Waves::Waves()
     : m_renderer(0),
-      m_zoom(-4),
+      m_zoom(-1),
       m_tilt(0),
       m_pan(0),
       m_roll(0),
@@ -89,6 +103,7 @@ void Waves::sync()
 {
     if (!m_renderer) {
         m_renderer = new WavesRenderer();
+        m_renderer->setSimulator(&m_simulator);
 
         connect(window(), SIGNAL(beforeRendering()), m_renderer, SLOT(paint()), Qt::DirectConnection);
     }
@@ -97,7 +112,11 @@ void Waves::sync()
     m_renderer->setModelViewMatrices(m_zoom, m_tilt, m_pan, m_roll);
 
     double dt = m_timer.restart() / 1000.0;
-    double safeDt = std::min(0.02, dt);
+
+    double c_max = 1.0;       			// Used to determine dt and Nt
+    double safeDt = 0.9*m_simulator.solver().dr()/sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
+    qDebug() << "safe dt: " << safeDt;
+    safeDt = std::min(safeDt, dt);
 
     if(m_running) {
         // Step if running

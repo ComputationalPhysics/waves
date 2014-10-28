@@ -6,6 +6,12 @@ float WaveSolver::averageValue() const
     return m_averageValue;
 }
 
+
+float WaveSolver::dr() const
+{
+    return m_dr;
+}
+
 void WaveSolver::calculateWalls()
 {
     for(unsigned int i=0;i<gridSize();i++) {
@@ -44,13 +50,13 @@ WaveSolver::WaveSolver() :
     m_length(2),
     m_averageValue(0)
 {
-    setGridSize(100);
-    float amplitude = 0.1;
+    setGridSize(128);
+    float amplitude = 0.5;
     float length = m_rMax-m_rMin;
     setLength(length);
     float x0 = 0;
     float y0 = 0;
-    float standardDeviation = 0.05;
+    float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
         float x = m_rMin+i*m_dr;
@@ -63,8 +69,8 @@ WaveSolver::WaveSolver() :
     });
 
     applyAction([&](int i, int j) {
-        m_solutionPrevious(i,j) *= amplitude/maxValue;
-        m_solution(i,j) *= amplitude/maxValue;
+        m_solutionPrevious(i,j) *= amplitude/std::max(maxValue, 1.0);
+        m_solution(i,j) *= amplitude/std::max(maxValue, 1.0);
     });
     calculateWalls();
     calculateMean();
@@ -99,7 +105,6 @@ void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
 void WaveSolver::step(float dt)
 {
     qDebug() << "stepping";
-    return;
     float factor = 1.0/(1+0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 

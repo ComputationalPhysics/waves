@@ -16,6 +16,9 @@ public:
     void resetProjection();
     void setModelViewMatrices(double zoom, double tilt, double pan, double roll);
 
+    Simulator *simulator() const;
+    void setSimulator(Simulator *simulator);
+
 public slots:
     void paint();
 
@@ -24,6 +27,7 @@ private:
     QMatrix4x4 m_projectionMatrix;
     QMatrix4x4 m_modelViewMatrix;
     QMatrix4x4 m_lightModelViewMatrix;
+    Simulator *m_simulator;
 };
 
 class Waves : public QQuickItem

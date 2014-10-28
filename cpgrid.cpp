@@ -23,18 +23,29 @@ void CPGrid::createShaderProgram()
 
         m_program->addShaderFromSourceCode(QOpenGLShader::Vertex,
                                            "attribute highp vec4 a_position;\n"
-                                           "attribute highp vec4 a_normal;\n"
+                                           "attribute highp vec3 a_normal;\n"
                                            "uniform highp mat4 modelViewProjectionMatrix;\n"
-                                           "varying highp vec4 normal;\n"
+                                           "varying highp vec3 normal;\n"
+                                           "varying highp vec3 mypos;\n"
                                            "void main() {\n"
                                            "    gl_Position = modelViewProjectionMatrix*a_position;\n"
-                                           "    normal = a_normal;\n"
+                                           "    normal = a_normal.xyz;\n"
+                                           "    mypos = a_position.xyz;\n"
                                            "}");
 
         m_program->addShaderFromSourceCode(QOpenGLShader::Fragment,
-                                           "varying highp vec4 normal;"
+                                           "uniform vec3 lightpos; \n"
+                                           "uniform vec3 targetdir; \n"
+                                           "varying highp vec3 normal;"
+                                           "varying highp vec3 mypos;\n"
                                            "void main() {\n"
-                                           "gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+                                           "  vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
+                                           "  gl_FragColor = val;\n"
+//                                           "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
+//                                           "  float shininess = 40.0;"
+//                                           "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+//                                           "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
+//                                           "  gl_FragColor.w = 0.7;"
                                            "}");
 
 
@@ -158,7 +169,7 @@ void CPGrid::uploadVBO() {
     m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
 }
 
-void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix) {
+void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4 &modelViewMatrix) {
     if(m_vertices.size() == 0) return;
     ensureInitialized();
     uploadVBO();
@@ -166,7 +177,15 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix) {
     createShaderProgram();
     m_program->bind();
 
+    QVector3D cameraDirection;
+    cameraDirection.setX(-modelViewMatrix(2,0));
+    cameraDirection.setY(-modelViewMatrix(2,1));
+    cameraDirection.setZ(-modelViewMatrix(2,2));
+    cameraDirection.normalize();
+
     m_program->setUniformValue("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    m_program->setUniformValue("targetdir", cameraDirection);
+    m_program->setUniformValue("lightpos",  QVector3D(1,1,1));
 
     // Tell OpenGL which VBOs to use
     m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
