@@ -10,10 +10,10 @@ void WaveSolver::calculateWalls()
 {
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
-            int oldValue = m_walls[i][j];
-            m_walls[i][j] = m_ground[i][j] > m_averageValue;
-            if(oldValue != m_walls[i][j]) {
-                m_solutionPrevious[i][j] = m_solution[i][j] = m_averageValue;
+            int oldValue = m_walls(i,j);
+            m_walls(i,j) = m_ground(i,j) > m_averageValue;
+            if(oldValue != m_walls(i,j)) {
+                m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
             }
         }
     }
@@ -25,8 +25,8 @@ void WaveSolver::calculateMean()
     unsigned int count = 0;
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
-            if(!m_walls[i][j]) {
-                m_averageValue += m_solutionNext[i][j];
+            if(!m_walls(i,j)) {
+                m_averageValue += m_solutionNext(i,j);
                 count++;
             }
         }
@@ -39,31 +39,32 @@ WaveSolver::WaveSolver() :
     m_dampingFactor(1),
     m_gridSize(0),
     m_dr(0),
-    m_length(2)
+    m_rMin(-1),
+    m_rMax(1),
+    m_length(2),
+    m_averageValue(0)
 {
     setGridSize(100);
     float amplitude = 0.1;
-    float rMin = -1.0;
-    float rMax = -1.0;
-    float length = rMax-rMin;
+    float length = m_rMax-m_rMin;
     setLength(length);
     float x0 = 0;
     float y0 = 0;
     float standardDeviation = 0.05;
     double maxValue = 0;
     applyAction([&](int i, int j) {
-        float x = rMin+i*m_dr;
-        float y = rMin+j*m_dr;
+        float x = m_rMin+i*m_dr;
+        float y = m_rMin+j*m_dr;
 
-        m_solutionPrevious[i][j] = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
-        m_solution[i][j] = m_solutionPrevious[i][j];
+        m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
+        m_solution(i,j) = m_solutionPrevious(i,j);
 
-        maxValue = std::max(maxValue,fabs(m_solution[i][j]));
+        maxValue = std::max(maxValue,fabs(m_solution(i,j)));
     });
 
     applyAction([&](int i, int j) {
-        m_solutionPrevious[i][j] *= amplitude/maxValue;
-        m_solution[i][j] *= amplitude/maxValue;
+        m_solutionPrevious(i,j) *= amplitude/maxValue;
+        m_solution(i,j) *= amplitude/maxValue;
     });
     calculateWalls();
     calculateMean();
@@ -71,12 +72,12 @@ WaveSolver::WaveSolver() :
 
 void WaveSolver::setGridSize(int gridSize)
 {
-    m_solution.setGridSize(gridSize);
-    m_solutionNext.setGridSize(gridSize);
-    m_solutionPrevious.setGridSize(gridSize);
-    m_walls.setGridSize(gridSize);
-    m_ground.setGridSize(gridSize);
-    m_source.setGridSize(gridSize);
+    m_solution.resize(gridSize, m_rMin, m_rMax);
+    m_solutionNext.resize(gridSize, m_rMin, m_rMax);
+    m_solutionPrevious.resize(gridSize, m_rMin, m_rMax);
+    m_walls.resize(gridSize, m_rMin, m_rMax);
+    m_ground.resize(gridSize, m_rMin, m_rMax);
+    m_source.resize(gridSize, m_rMin, m_rMax);
     m_gridSize = gridSize;
     m_dr = m_length / (gridSize-1);
 }
@@ -88,8 +89,8 @@ void WaveSolver::setLength(float length)
 }
 
 void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
-    for(int i=0; i<gridSize(); i++) {
-        for(int j=0; j<gridSize(); j++) {
+    for(unsigned int i=0; i<gridSize(); i++) {
+        for(unsigned int j=0; j<gridSize(); j++) {
             action(i,j);
         }
     }
@@ -97,6 +98,8 @@ void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
 
 void WaveSolver::step(float dt)
 {
+    qDebug() << "stepping";
+    return;
     float factor = 1.0/(1+0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 
@@ -112,12 +115,12 @@ void WaveSolver::step(float dt)
             float cy_m = 0.5*(c+calcC(i,j-1));
             float cy_p = 0.5*(c+calcC(i,j+1));
 
-            float ddx = cx_p*( solution(i,j,1,0)   - m_solution[i][j]) - cx_m*( m_solution[i][j] - solution(i,j,-1,0) );
-            float ddy = cy_p*( solution(i,j,0,1)   - m_solution[i][j] ) - cy_m*( m_solution[i][j] - solution(i,j,0,-1) );
-            float ddt_rest = -(1-0.5*m_dampingFactor*dt)*m_solutionPrevious[i][j] + 2*m_solution[i][j];
+            float ddx = cx_p*( solution(i,j,1,0)   - m_solution(i,j)) - cx_m*( m_solution(i,j) - solution(i,j,-1,0) );
+            float ddy = cy_p*( solution(i,j,0,1)   - m_solution(i,j) ) - cy_m*( m_solution(i,j) - solution(i,j,0,-1) );
+            float ddt_rest = -(1-0.5*m_dampingFactor*dt)*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
             // Set value to zero if we have a wall.
-            m_solutionNext[i][j] = m_walls[i][j] ? 0 : factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source[i][j]);
+            m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
         }
     }
 

@@ -6,7 +6,6 @@
 #include <QMatrix4x4>
 
 #include "simulator.h"
-#include "cpglquads.h"
 
 class WavesRenderer : public QObject {
     Q_OBJECT
@@ -37,7 +36,7 @@ class Waves : public QQuickItem
     Q_PROPERTY(bool running READ running WRITE setRunning NOTIFY runningChanged)
     Q_PROPERTY(bool previousStepCompleted READ previousStepCompleted NOTIFY previousStepCompletedChanged)
 public:
-    Q_INVOKABLE void step(double dt);
+    Q_INVOKABLE void step();
     Waves();
     ~Waves();
 

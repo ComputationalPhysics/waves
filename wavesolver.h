@@ -15,6 +15,8 @@ private:
     float  m_dampingFactor;
     int    m_gridSize;
     float  m_dr;
+    float  m_rMin;
+    float  m_rMax;
     float  m_length;
     float  m_averageValue;
     void calculateWalls();
@@ -32,18 +34,18 @@ public:
     }
 
     inline float solution(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj)) {
-            return m_solution(i-di,j-dj);
+        if(m_walls(i+di,j+dj,true)) {
+            return m_solution(i-di,j-dj,true);
         }
-        return m_solution(i+di,j+dj);
+        return m_solution(i+di,j+dj,true);
     }
 
     inline float solutionPrevious(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj)) {
-            return m_solutionPrevious(i-di,j-dj);
+        if(m_walls(i+di,j+dj,true)) {
+            return m_solutionPrevious(i-di,j-dj,true);
         }
 
-        return m_solutionPrevious(i+di,j+dj);
+        return m_solutionPrevious(i+di,j+dj,true);
     }
     float averageValue() const;
 };

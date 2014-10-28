@@ -56,7 +56,7 @@ void WavesRenderer::paint() {
     glDepthMask(GL_TRUE);
 }
 
-void Waves::step(double dt)
+void Waves::step()
 {
     if(!m_previousStepCompleted) {
         return;

@@ -9,7 +9,6 @@ QMAKE_CXXFLAGS += -stdlib=libc++
 SOURCES += main.cpp \
     waves.cpp \
     simulator.cpp \
-    cpglquads.cpp \
     cpgrid.cpp \
     wavesolver.cpp
 
@@ -24,6 +23,5 @@ include(deployment.pri)
 HEADERS += \
     waves.h \
     simulator.h \
-    cpglquads.h \
     cpgrid.h \
     wavesolver.h
