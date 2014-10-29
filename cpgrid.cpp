@@ -39,13 +39,14 @@ void CPGrid::createShaderProgram()
                                            "varying highp vec3 normal;"
                                            "varying highp vec3 mypos;\n"
                                            "void main() {\n"
+                                           "  vec3 normal2 = vec3(0.0, 0.0, 1.0);"
                                            "  vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
-                                           "  gl_FragColor = val;\n"
-//                                           "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
-//                                           "  float shininess = 40.0;"
-//                                           "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
-//                                           "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
-//                                           "  gl_FragColor.w = 0.7;"
+//                                           "  gl_FragColor = val;\n"
+                                           "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
+                                           "  float shininess = 40.0;"
+                                           "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+                                           "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
+                                           "  gl_FragColor.w = 0.7;"
                                            "}");
 
 
@@ -55,13 +56,13 @@ void CPGrid::createShaderProgram()
 
 void CPGrid::generateVBOs()
 {
-    ensureInitialized();
     m_funcs->glGenBuffers(2, m_vboIds);
 }
 
 void CPGrid::ensureInitialized()
 {
     if(!m_funcs) m_funcs = new QOpenGLFunctions(QOpenGLContext::currentContext());
+    generateVBOs();
 }
 
 CPGrid::CPGrid() :
@@ -159,6 +160,7 @@ void CPGrid::calculateNormals() {
 
 void CPGrid::uploadVBO() {
     ensureInitialized();
+    calculateNormals();
 
     // Transfer vertex data to VBO 0
     m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
@@ -211,5 +213,5 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4
     m_funcs->glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_SHORT, 0);
 
 
-    // m_program->release();
+    m_program->release();
 }

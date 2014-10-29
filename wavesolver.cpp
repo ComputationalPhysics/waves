@@ -104,7 +104,6 @@ void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
 
 void WaveSolver::step(float dt)
 {
-    qDebug() << "stepping";
     float factor = 1.0/(1+0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 

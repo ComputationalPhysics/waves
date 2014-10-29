@@ -55,7 +55,7 @@ void WavesRenderer::paint() {
 
     QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
     QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
-    m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
+    if(m_simulator) m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
 
     glDepthMask(GL_TRUE);
 }
@@ -115,7 +115,6 @@ void Waves::sync()
 
     double c_max = 1.0;       			// Used to determine dt and Nt
     double safeDt = 0.9*m_simulator.solver().dr()/sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
-    qDebug() << "safe dt: " << safeDt;
     safeDt = std::min(safeDt, dt);
 
     if(m_running) {
