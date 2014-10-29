@@ -35,13 +35,21 @@ public:
     }
 };
 
+enum class GridType {NotUsed = 0, Water = 1, Ground = 2};
+
 class CPGrid
 {
 private:
     std::vector<CPPoint>      m_vertices;
     std::vector<GLushort>     m_indices;
     std::vector<CPTriangle>   m_triangles;
+    QString                   m_waterVertexShader;
+    QString                   m_waterFragmentShader;
+    QString                   m_groundVertexShader;
+    QString                   m_groundFragmentShader;
+
     int m_gridSize;
+    GridType m_gridType;
 
     // OpenGL stuff
     GLuint m_vboIds[2];
@@ -57,6 +65,7 @@ private:
     void generateVBOs();
     void ensureInitialized();
     void uploadVBO();
+    void setShaders();
 
 public:
     CPGrid();
@@ -80,6 +89,8 @@ public:
     void calculateNormals();
     std::vector<CPPoint> vertices() const;
     void setVertices(const std::vector<CPPoint> &vertices);
+    GridType getGridType() const;
+    void setGridType(const GridType &GridType);
 };
 
 #endif // CPGRID_H

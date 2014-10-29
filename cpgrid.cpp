@@ -16,39 +16,37 @@ void CPGrid::setVertices(const std::vector<CPPoint> &vertices)
 {
     m_vertices = vertices;
 }
+
+
+GridType CPGrid::getGridType() const
+{
+    return m_gridType;
+}
+
+void CPGrid::setGridType(const GridType &gridType)
+{
+    m_gridType = gridType;
+    if(m_program) {
+        delete m_program;
+        m_program = 0;
+        createShaderProgram();
+    }
+}
 void CPGrid::createShaderProgram()
 {
     if (!m_program) {
         m_program = new QOpenGLShaderProgram();
 
-        m_program->addShaderFromSourceCode(QOpenGLShader::Vertex,
-                                           "attribute highp vec4 a_position;\n"
-                                           "attribute highp vec3 a_normal;\n"
-                                           "uniform highp mat4 modelViewProjectionMatrix;\n"
-                                           "varying highp vec3 normal;\n"
-                                           "varying highp vec3 mypos;\n"
-                                           "void main() {\n"
-                                           "    gl_Position = modelViewProjectionMatrix*a_position;\n"
-                                           "    normal = a_normal.xyz;\n"
-                                           "    mypos = a_position.xyz;\n"
-                                           "}");
-
-        m_program->addShaderFromSourceCode(QOpenGLShader::Fragment,
-                                           "uniform vec3 lightpos; \n"
-                                           "uniform vec3 targetdir; \n"
-                                           "varying highp vec3 normal;"
-                                           "varying highp vec3 mypos;\n"
-                                           "void main() {\n"
-                                           "  vec3 normal2 = vec3(0.0, 0.0, 1.0);"
-                                           "  vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
-//                                           "  gl_FragColor = val;\n"
-                                           "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
-                                           "  float shininess = 40.0;"
-                                           "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
-                                           "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
-                                           "  gl_FragColor.w = 0.7;"
-                                           "}");
-
+        if(m_gridType == GridType::Water) {
+            m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_waterVertexShader);
+            m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, m_waterFragmentShader);
+        } else if(m_gridType == GridType::Ground) {
+            m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_groundVertexShader);
+            m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, m_groundFragmentShader);
+        } else {
+            qDebug() << "Warning, tried to create shader of unknown type." << endl;
+            exit(1);
+        }
 
         m_program->link();
     }
@@ -70,7 +68,8 @@ CPGrid::CPGrid() :
     m_funcs(0),
     m_program(0)
 {
-
+    m_gridType = GridType::Water;
+    setShaders();
 }
 
 CPGrid::~CPGrid() {
@@ -169,6 +168,36 @@ void CPGrid::uploadVBO() {
     // Transfer index data to VBO 1
     m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
     m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
+}
+
+void CPGrid::setShaders()
+{
+    m_waterVertexShader =
+            "attribute highp vec4 a_position;\n"
+            "attribute highp vec3 a_normal;\n"
+            "uniform highp mat4 modelViewProjectionMatrix;\n"
+            "varying highp vec3 normal;\n"
+            "varying highp vec3 mypos;\n"
+            "void main() {\n"
+            "    gl_Position = modelViewProjectionMatrix*a_position;\n"
+            "    normal = a_normal.xyz;\n"
+            "    mypos = a_position.xyz;\n"
+            "}";
+
+    m_waterFragmentShader =
+            "uniform vec3 lightpos; \n"
+            "uniform vec3 targetdir; \n"
+            "varying highp vec3 normal;"
+            "varying highp vec3 mypos;\n"
+            "void main() {\n"
+            "  vec3 normal2 = vec3(0.0, 0.0, 1.0);"
+            "  vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
+            "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
+            "  float shininess = 40.0;"
+            "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
+            "  gl_FragColor.w = 0.7;"
+            "}";
 }
 
 void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4 &modelViewMatrix) {
