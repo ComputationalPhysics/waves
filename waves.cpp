@@ -47,17 +47,14 @@ void WavesRenderer::setModelViewMatrices(double zoom, double tilt, double pan, d
 void WavesRenderer::paint() {
     glViewport(0, 0, m_viewportSize.width(), m_viewportSize.height());
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-
     glClearColor(0, 0, 0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
     QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
+    if(m_simulator) m_simulator->solver().ground().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
     if(m_simulator) m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
 
-    glDepthMask(GL_TRUE);
 }
 Simulator *WavesRenderer::simulator() const
 {

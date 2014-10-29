@@ -80,15 +80,6 @@ CPGrid::~CPGrid() {
     m_triangles.clear();
 }
 
-void CPGrid::for_each(std::function<void (int, int)> action)
-{
-    for(int i=0; i<gridSize(); i++) {
-        for(int j=0; j<gridSize(); j++) {
-            action(i,j);
-        }
-    }
-}
-
 void CPGrid::for_each(std::function<void (CPPoint &p)> action)
 {
     for(CPPoint &p : m_vertices) {
@@ -101,6 +92,15 @@ void CPGrid::for_each(std::function<void (CPPoint &p, int i, int j)> action)
     for(int i=0; i<gridSize(); i++) {
         for(int j=0; j<gridSize(); j++) {
             action(m_vertices[index(i,j)], i, j);
+        }
+    }
+}
+
+void CPGrid::for_each(std::function<void (CPPoint &p, int i, int j, int gridSize)> action)
+{
+    for(int i=0; i<gridSize(); i++) {
+        for(int j=0; j<gridSize(); j++) {
+            action(m_vertices[index(i,j)], i, j, gridSize());
         }
     }
 }
@@ -125,7 +125,7 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
 
     m_indices.clear();
     m_triangles.clear();
-    for_each([&](int i, int j) {
+    for_each([&](CPPoint &p, int i, int j) {
         // Skip the end points
         if(i<gridSize - 1 && j<gridSize - 1) {
             // Triangle 1
@@ -159,7 +159,7 @@ void CPGrid::calculateNormals() {
 
 void CPGrid::uploadVBO() {
     ensureInitialized();
-    calculateNormals();
+    if(m_gridType == GridType::Water) calculateNormals();
 
     // Transfer vertex data to VBO 0
     m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
@@ -198,6 +198,40 @@ void CPGrid::setShaders()
             "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
             "  gl_FragColor.w = 0.7;"
             "}";
+
+    m_groundVertexShader =
+            "attribute highp vec4 a_position;\n"
+            "attribute highp vec3 a_normal;\n"
+            "uniform highp mat4 modelViewProjectionMatrix;\n"
+            "varying vec3 normal; \n"
+            "varying vec3 mypos; \n"
+            "void main(void) \n"
+            "{ \n"
+            "   highp vec4 adjustedPosition = a_position;\n"
+            "   adjustedPosition.z -= 0.0;\n"
+            "	normal = a_normal; \n"
+            "	mypos = a_position.xyz; \n"
+//            "   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+            "   gl_Position = modelViewProjectionMatrix * adjustedPosition;\n"
+            "}\n";
+
+    m_groundFragmentShader =
+            "uniform vec3 lightpos; \n"
+            "uniform vec3 targetdir; \n"
+            "varying vec3 normal; \n"
+            "varying vec3 mypos; \n"
+            "void main(void)\n"
+            "{\n "
+            "  vec4 val = vec4(0.7,0.5,0.3,1);"
+//            "  if(mypos.z > 1.1) {"
+//            "      val = vec4(10.0*(mypos.z-1.0),10.0*(mypos.z-1.0),10.0*(mypos.z-1.0),1.0);"
+//            "  }                  "
+            "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"
+            "  float shininess = 100.0;"
+            "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  gl_FragColor = val*light + vec4(1,1,1,1)*specular; \n"
+            "  gl_FragColor.w = 1.0;"
+            "}\n";
 }
 
 void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4 &modelViewMatrix) {
@@ -238,9 +272,11 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4
     m_program->enableAttributeArray(normalLocation);
     m_funcs->glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, sizeof(CPPoint), (const void *)offset);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Draw cube geometry using indices from VBO 1
     m_funcs->glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_SHORT, 0);
-
+    glDisable(GL_BLEND);
 
     m_program->release();
 }

@@ -5,6 +5,7 @@ Item {
     id: wavesRoot
     width: 1280
     height: 720
+
     Waves {
         id: waves
         anchors.fill: parent

@@ -10,7 +10,8 @@ SOURCES += main.cpp \
     waves.cpp \
     simulator.cpp \
     cpgrid.cpp \
-    wavesolver.cpp
+    wavesolver.cpp \
+    perlinnoise.cpp
 
 RESOURCES += qml.qrc
 
@@ -24,4 +25,5 @@ HEADERS += \
     waves.h \
     simulator.h \
     cpgrid.h \
-    wavesolver.h
+    wavesolver.h \
+    perlinnoise.h

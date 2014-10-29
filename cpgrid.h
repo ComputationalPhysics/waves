@@ -70,9 +70,9 @@ private:
 public:
     CPGrid();
     ~CPGrid();
-    void for_each(std::function<void(int i, int j)> action);
     void for_each(std::function<void(CPPoint &p)> action);
     void for_each(std::function<void(CPPoint &p, int i, int j)> action);
+    void for_each(std::function<void(CPPoint &p, int i, int j, int gridSize)> action);
 
     int gridSize() { return m_gridSize; }
     void resize(int gridSize, float rMin, float rMax);

@@ -4,6 +4,8 @@
 #include <QGuiApplication>
 #include <QtQuick/QQuickView>
 #include "waves.h"
+#include <vector>
+using namespace std;
 
 # if defined (Q_OS_IOS)
 extern "C" int qtmn (int argc, char * argv [])

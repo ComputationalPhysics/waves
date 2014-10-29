@@ -1,4 +1,6 @@
 #include "wavesolver.h"
+#include "perlinnoise.h"
+
 #include <cmath>
 
 float WaveSolver::averageValue() const
@@ -12,8 +14,15 @@ float WaveSolver::dr() const
     return m_dr;
 }
 
+
+CPGrid WaveSolver::ground() const
+{
+    return m_ground;
+}
+
 void WaveSolver::calculateWalls()
 {
+    calculateMean();
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
             int oldValue = m_walls(i,j);
@@ -50,6 +59,7 @@ WaveSolver::WaveSolver() :
     m_length(2),
     m_averageValue(0)
 {
+    m_ground.setGridType(GridType::Ground);
     setGridSize(128);
     float amplitude = 0.5;
     float length = m_rMax-m_rMin;
@@ -72,8 +82,34 @@ WaveSolver::WaveSolver() :
         m_solutionPrevious(i,j) *= amplitude/std::max(maxValue, 1.0);
         m_solution(i,j) *= amplitude/std::max(maxValue, 1.0);
     });
+
+    createGround(GroundType::PerlinNoise);
     calculateWalls();
-    calculateMean();
+}
+
+void WaveSolver::createGround(GroundType type) {
+    if(type == GroundType::PerlinNoise) {
+        createPerlinNoiseGround(0, 0.5, 5.0, -0.4);
+
+    } else if(type == GroundType::Slope) {
+        applyAction([&](int i, int j, int gridSize) {
+            float height = 0.5 - 2*i/float(gridSize);
+            m_ground(i,j) = height;
+        });
+    }
+
+    m_ground.calculateNormals();
+}
+
+void WaveSolver::createPerlinNoiseGround(unsigned int seed, float amplitude, float lengthScale, float deltaZ) {
+    PerlinNoise perlin(seed);
+    m_ground.for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float x = i/float(gridSize);
+        float y = j/float(gridSize);
+
+        float z = amplitude*(perlin.noise(x*lengthScale,y*lengthScale,0)) + deltaZ;
+        p.position.setZ(z);
+    });
 }
 
 void WaveSolver::setGridSize(int gridSize)
@@ -98,6 +134,14 @@ void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
     for(unsigned int i=0; i<gridSize(); i++) {
         for(unsigned int j=0; j<gridSize(); j++) {
             action(i,j);
+        }
+    }
+}
+
+void WaveSolver::applyAction(std::function<void(int i, int j, int gridSize)> action) {
+    for(unsigned int i=0; i<gridSize(); i++) {
+        for(unsigned int j=0; j<gridSize(); j++) {
+            action(i,j, gridSize());
         }
     }
 }
@@ -131,8 +175,7 @@ void WaveSolver::step(float dt)
     m_solutionPrevious = m_solution;
     m_solution = m_solutionNext;
 
-    // avg_u = mean(mean(u_));
     calculateWalls();
-    calculateMean();
+    calculateMean();// Switched this and next line
     m_source.zeros();
 }

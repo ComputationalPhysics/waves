@@ -3,6 +3,8 @@
 #include "cpgrid.h"
 #include <functional>
 
+enum class GroundType {Slope = 0, PerlinNoise = 1};
+
 class WaveSolver
 {
 private:
@@ -27,7 +29,6 @@ public:
     unsigned int gridSize() { return m_solution.gridSize(); }
     void setLength(float length);
     void step(float dt);
-    void applyAction(std::function<void(int i, int j)> action);
 
     inline float calcC(int i, int j) {
         return 1.0;
@@ -54,6 +55,11 @@ public:
     }
     float averageValue() const;
     float dr() const;
+    void applyAction(std::function<void(int i, int j)> action);
+    void applyAction(std::function<void (int, int, int)> action);
+    CPGrid ground() const;
+    void createPerlinNoiseGround(unsigned int seed, float amplitude, float lengthScale, float deltaZ);
+    void createGround(GroundType type);
 };
 
 #endif // WAVESOLVER_H
