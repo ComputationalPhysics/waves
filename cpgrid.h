@@ -18,20 +18,24 @@ public:
 class CPTriangle
 {
 public:
-    CPPoint* points[3];
+    int      pointIndices[3];
     QVector3D normal;
 
-    CPTriangle(CPPoint *p1, CPPoint *p2, CPPoint *p3) {
-        points[0] = p1;
-        points[1] = p2;
-        points[2] = p3;
+    CPTriangle(int p1, int p2, int p3) {
+        pointIndices[0] = p1;
+        pointIndices[1] = p2;
+        pointIndices[2] = p3;
     }
 
-    void calculateNormal() {
-        normal = QVector3D::crossProduct(points[2]->position - points[0]->position, points[1]->position - points[0]->position).normalized();
-        points[0]->normal = normal;
-        points[1]->normal = normal;
-        points[2]->normal = normal;
+    void calculateNormal(std::vector<CPPoint> &allPoints) {
+        CPPoint &p0 = allPoints[pointIndices[0]];
+        CPPoint &p1 = allPoints[pointIndices[1]];
+        CPPoint &p2 = allPoints[pointIndices[2]];
+        // normal = QVector3D::crossProduct(points[2]->position - points[0]->position, points[1]->position - points[0]->position).normalized();
+        normal = QVector3D::crossProduct(p2.position - p0.position, p1.position - p0.position).normalized();
+        p0.normal = normal;
+        p1.normal = normal;
+        p2.normal = normal;
     }
 };
 
@@ -88,14 +92,16 @@ public:
     void zeros();
     void renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4 &modelViewMatrix);
     void calculateNormals();
-    std::vector<CPPoint> vertices() const;
+    std::vector<CPPoint> &vertices();
     void setVertices(const std::vector<CPPoint> &vertices);
     GridType getGridType() const;
     void setGridType(const GridType &GridType);
 
     void createPerlin(unsigned int seed, float amplitude, float lengthScale, float deltaZ);
     void createDoubleSlit();
-    void copyGridFrom(CPGrid &grid);
+    void createSinus();
+    void swapWithGrid(CPGrid &grid);
+
 };
 
 #endif // CPGRID_H

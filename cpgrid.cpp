@@ -1,6 +1,10 @@
 #include "cpgrid.h"
 #include "perlinnoise.h"
 #include "cptimer.h"
+#include <cmath>
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 CPGrid::CPGrid() :
     m_gridSize(0),
@@ -27,7 +31,7 @@ void CPGrid::zeros()
     });
 }
 
-std::vector<CPPoint> CPGrid::vertices() const
+std::vector<CPPoint> &CPGrid::vertices()
 {
     return m_vertices;
 }
@@ -142,7 +146,7 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
             m_indices.push_back(index1);
             m_indices.push_back(index2);
             m_indices.push_back(index3);
-            CPTriangle triangle1(&m_vertices[index1], &m_vertices[index2], &m_vertices[index3]);
+            CPTriangle triangle1(index1, index2, index3);
             m_triangles.push_back(triangle1);
 
             // Triangle 2
@@ -152,7 +156,7 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
             m_indices.push_back(index1);
             m_indices.push_back(index2);
             m_indices.push_back(index3);
-            CPTriangle triangle2(&m_vertices[index1], &m_vertices[index2], &m_vertices[index3]);
+            CPTriangle triangle2(index1, index2, index3);
             m_triangles.push_back(triangle2);
         }
     });
@@ -160,13 +164,24 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
     m_indicesDirty = true;
 }
 
+#if defined(__ARM_NEON)
 void CPGrid::calculateNormals() {
     CPTimer::normalVectors().start();
     for(CPTriangle &triangle : m_triangles) {
-        triangle.calculateNormal();
+        triangle.calculateNormal(m_vertices);
     }
     CPTimer::normalVectors().stop();
 }
+
+#else
+void CPGrid::calculateNormals() {
+    CPTimer::normalVectors().start();
+    for(CPTriangle &triangle : m_triangles) {
+        triangle.calculateNormal(m_vertices);
+    }
+    CPTimer::normalVectors().stop();
+}
+#endif
 
 void CPGrid::uploadVBO() {
     ensureInitialized();
@@ -323,11 +338,11 @@ void CPGrid::createPerlin(unsigned int seed, float amplitude, float lengthScale,
 
 void CPGrid::createDoubleSlit()
 {
-    int slitSize = 2;
+    int slitSize = 3;
     for_each([&](CPPoint &p, int i, int j, int gridSize) {
         bool wall = i==0 || i==(gridSize-1) || j==0 || j==(gridSize-1);
-        int slit1 = gridSize/2 + 4;
-        int slit2 = gridSize/2 - 4;
+        int slit1 = gridSize/2 + 6;
+        int slit2 = gridSize/2 - 6;
 
         wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
 
@@ -338,9 +353,24 @@ void CPGrid::createDoubleSlit()
     calculateNormals();
 }
 
-void CPGrid::copyGridFrom(CPGrid &grid)
+void CPGrid::createSinus()
 {
-    grid.for_each([&](CPPoint &p, int i, int j) {
-        m_vertices[index(i,j)] = p;
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float y = j/float(gridSize)*2*3.1415;
+        float omega = 1.0;
+        float x0 = 0.1*sin(y*omega);
+        float x = (i-gridSize/2) / float(gridSize);
+
+        bool wall = fabs(x-x0) > 0.05;
+
+        float z = wall ? 0.2 : -0.5;
+        p.position.setZ(z);
     });
+
+    calculateNormals();
+}
+
+void CPGrid::swapWithGrid(CPGrid &grid)
+{
+    m_vertices.swap(grid.vertices());
 }

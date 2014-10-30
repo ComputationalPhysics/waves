@@ -1,5 +1,6 @@
 #include "wavesolver.h"
 #include "perlinnoise.h"
+#include "cptimer.h"
 
 #include <cmath>
 
@@ -75,7 +76,7 @@ WaveSolver::WaveSolver() :
 
     float x0 = 0;
     float y0 = -1.5;
-    float amplitude = 0.2;
+    float amplitude = 0.5;
     float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
@@ -95,7 +96,8 @@ WaveSolver::WaveSolver() :
     });
 
     m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-    //m_ground.createDoubleSlit();
+    m_ground.createDoubleSlit();
+    // m_ground.createSinus();
     calculateWalls();
 }
 
@@ -137,8 +139,8 @@ void WaveSolver::createRandomGauss() {
     qDebug() << "Actually creating random gauss";
     double x0 = m_rMin + (m_rMax-m_rMin)*rand()/(double)RAND_MAX;
     double y0 = m_rMin + (m_rMax-m_rMin)*rand()/(double)RAND_MAX;
-    double stddev = 0.05;
-    float amplitude = 0.2;
+    double stddev = 0.2;
+    float amplitude = 0.5;
     applyAction([&](int i, int j) {
         float x = m_rMin + i*m_dr; 					// The x- and y-center can have an offset
         float y = m_rMin + j*m_dr;
@@ -155,9 +157,11 @@ void WaveSolver::step(float dt)
 
     // calculateSource();
 
+    CPTimer::temp().start();
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
             float c = calcC(i,j); // wave speed
+
 
             float cx_m = 0.5*(c+calcC(i-1,j)); 	// Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
             float cx_p = 0.5*(c+calcC(i+1,j));
@@ -172,9 +176,12 @@ void WaveSolver::step(float dt)
             m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
         }
     }
+    CPTimer::temp().stop();
 
-    m_solutionPrevious.copyGridFrom(m_solution);
-    m_solution.copyGridFrom(m_solutionNext);
+    CPTimer::copyData().start();
+    m_solutionPrevious.swapWithGrid(m_solution);
+    m_solution.swapWithGrid(m_solutionNext);
+    CPTimer::copyData().stop();
 
     calculateWalls();
     m_source.zeros();
