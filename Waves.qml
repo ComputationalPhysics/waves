@@ -55,6 +55,15 @@ Item {
                     movedTooFarToHide = false
                 }
 
+                onReleased: {
+                    var dx = Math.abs(pressedPosition.x - mouse.x)
+                    var dy = Math.abs(pressedPosition.y - mouse.y)
+                    var dr2 = dx*dx + dy*dy
+                    if(dr2 < 20) {
+                        waves.createRandomGauss()
+                    }
+                }
+
                 onPositionChanged: {
                     var pressedDeltaX = mouse.x - pressedPosition.x
                     var pressedDeltaY = mouse.y - pressedPosition.y
