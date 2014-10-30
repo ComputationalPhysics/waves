@@ -95,8 +95,8 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-    m_ground.createDoubleSlit();
+    // m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+    // m_ground.createDoubleSlit();
     // m_ground.createSinus();
     calculateWalls();
 }
@@ -153,6 +153,7 @@ void WaveSolver::createRandomGauss() {
 void WaveSolver::step(float dt)
 {
     float factor = 1.0/(1+0.5*m_dampingFactor*dt);
+    float factor2 = -(1.0-0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 
     // calculateSource();
@@ -160,8 +161,15 @@ void WaveSolver::step(float dt)
     CPTimer::temp().start();
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
-            float c = calcC(i,j); // wave speed
+#ifdef CONSTANTWAVESPEED
+            float ddx = solution(i,j,1,0) + solution(i,j,-1,0);
+            float ddy = solution(i,j,0,1) + solution(i,j,0,-1) ;
+            float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
+            // Set value to zero if we have a wall.
+            m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+#else
+            float c = calcC(i,j); // wave speed
 
             float cx_m = 0.5*(c+calcC(i-1,j)); 	// Calculate the 4 c's we need. We need c_{i \pm 1/2,j} and c_{i,j \pm 1/2}
             float cx_p = 0.5*(c+calcC(i+1,j));
@@ -170,10 +178,10 @@ void WaveSolver::step(float dt)
 
             float ddx = cx_p*( solution(i,j,1,0)   - m_solution(i,j)) - cx_m*( m_solution(i,j) - solution(i,j,-1,0) );
             float ddy = cy_p*( solution(i,j,0,1)   - m_solution(i,j)) - cy_m*( m_solution(i,j) - solution(i,j,0,-1) );
-            float ddt_rest = -(1-0.5*m_dampingFactor*dt)*m_solutionPrevious(i,j) + 2*m_solution(i,j);
+            float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
-            // Set value to zero if we have a wall.
             m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
+#endif
         }
     }
     CPTimer::temp().stop();

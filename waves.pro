@@ -3,7 +3,7 @@ TARGET = waves
 
 QT += qml quick widgets opengl openglextensions
 CONFIG += c++11
-
+#DEFINES += CONSTANTWAVESPEED
 mac {
     #QMAKE_CXXFLAGS += -stdlib=libc++
 }

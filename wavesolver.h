@@ -38,7 +38,7 @@ public:
         if(m_walls(i+di,j+dj,true)) {
             return m_solution(i-di,j-dj,true);
         }
-        return m_solution(i+di,j+dj,true);
+        return m_solution(i+di,j+dj, true);
     }
 
     inline float solutionPrevious(int i,int j, int di, int dj) {
@@ -46,7 +46,7 @@ public:
             return m_solutionPrevious(i-di,j-dj,true);
         }
 
-        return m_solutionPrevious(i+di,j+dj,true);
+        return m_solutionPrevious(i+di,j+dj, true);
     }
     float averageValue() const;
     float dr() const;
