@@ -54,6 +54,7 @@ public:
     void applyAction(std::function<void (int, int, int)> action);
     CPGrid &ground();
     CPGrid &solution();
+    void createRandomGauss();
 };
 
 #endif // WAVESOLVER_H

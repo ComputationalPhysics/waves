@@ -5,6 +5,15 @@ Item {
     id: wavesRoot
     width: 1280
     height: 720
+    focus: true
+
+    Keys.onPressed: {
+        if(event.key === Qt.Key_Space) {
+            waves.createRandomGauss()
+        } else {
+            console.log("something else")
+        }
+    }
 
     Waves {
         id: waves

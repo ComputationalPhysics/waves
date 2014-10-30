@@ -56,7 +56,7 @@ void WaveSolver::calculateMean()
 }
 
 WaveSolver::WaveSolver() :
-    m_dampingFactor(0),
+    m_dampingFactor(0.1),
     m_gridSize(0),
     m_dr(0),
     m_rMin(-1),
@@ -65,6 +65,8 @@ WaveSolver::WaveSolver() :
     m_averageValue(0.0)
 {
     m_ground.setGridType(GridType::Ground);
+    m_solution.setGridType(GridType::Water);
+
     m_rMin = -5;
     m_rMax = 5;
     float length = m_rMax-m_rMin;
@@ -73,8 +75,8 @@ WaveSolver::WaveSolver() :
 
     float x0 = 0;
     float y0 = -1.5;
-    float amplitude = 0.3;
-    float standardDeviation = 0.05;
+    float amplitude = 0.2;
+    float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
         float x = m_rMin+i*m_dr;
@@ -93,7 +95,7 @@ WaveSolver::WaveSolver() :
     });
 
     m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-    // m_ground.createDoubleSlit();
+    //m_ground.createDoubleSlit();
     calculateWalls();
 }
 
@@ -129,6 +131,21 @@ void WaveSolver::applyAction(std::function<void(int i, int j, int gridSize)> act
             action(i,j, gridSize());
         }
     }
+}
+
+void WaveSolver::createRandomGauss() {
+    qDebug() << "Actually creating random gauss";
+    double x0 = m_rMin + (m_rMax-m_rMin)*rand()/(double)RAND_MAX;
+    double y0 = m_rMin + (m_rMax-m_rMin)*rand()/(double)RAND_MAX;
+    double stddev = 0.05;
+    float amplitude = 0.2;
+    applyAction([&](int i, int j) {
+        float x = m_rMin + i*m_dr; 					// The x- and y-center can have an offset
+        float y = m_rMin + j*m_dr;
+
+        m_solutionPrevious (i,j) += amplitude*exp(-(pow(x-x0,2)+pow(y-y0,2))/(2*stddev*stddev));
+        m_solution(i,j)          += amplitude*exp(-(pow(x-x0,2)+pow(y-y0,2))/(2*stddev*stddev));
+    });
 }
 
 void WaveSolver::step(float dt)

@@ -126,6 +126,12 @@ public slots:
         emit runningChanged(arg);
     }
 
+    void createRandomGauss()
+    {
+        qDebug() << "Creating random gauss";
+        m_simulator.solver().createRandomGauss();
+    }
+
 signals:
     void zoomChanged(float arg);
     void tiltChanged(double arg);

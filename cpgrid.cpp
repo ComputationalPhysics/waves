@@ -216,6 +216,7 @@ void CPGrid::setShaders()
             "  highp float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
             "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
             "  gl_FragColor.w = 0.7;"
+//            "  gl_FragColor = vec4( (mypos.x+5.0)/10.0, (mypos.y+5.0)/10.0, 0.0, 1.0);\n" // For touch detection
             "}";
 
     m_groundVertexShader =
