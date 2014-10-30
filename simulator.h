@@ -9,7 +9,7 @@ private:
 public:
     Simulator();
     void step(double dt);
-    WaveSolver solver() const;
+    WaveSolver &solver();
 };
 
 #endif // SIMULATOR_H

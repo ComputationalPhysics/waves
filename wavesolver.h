@@ -31,25 +31,20 @@ public:
     void step(float dt);
 
     inline float calcC(int i, int j) {
-        return 1.0;
-        // return std::max(-m_ground(i,j),1.0f);
-    }
-
-    inline CPGrid &solution() {
-        return m_solution;
+        return std::max(-m_ground(i,j,true),1.0f);
     }
 
     inline float solution(int i,int j, int di, int dj) {
-//        if(m_walls(i+di,j+dj,true)) {
-//            return m_solution(i-di,j-dj,true);
-//        }
+        if(m_walls(i+di,j+dj,true)) {
+            return m_solution(i-di,j-dj,true);
+        }
         return m_solution(i+di,j+dj,true);
     }
 
     inline float solutionPrevious(int i,int j, int di, int dj) {
-//        if(m_walls(i+di,j+dj,true)) {
-//            return m_solutionPrevious(i-di,j-dj,true);
-//        }
+        if(m_walls(i+di,j+dj,true)) {
+            return m_solutionPrevious(i-di,j-dj,true);
+        }
 
         return m_solutionPrevious(i+di,j+dj,true);
     }
@@ -57,9 +52,8 @@ public:
     float dr() const;
     void applyAction(std::function<void(int i, int j)> action);
     void applyAction(std::function<void (int, int, int)> action);
-    CPGrid ground() const;
-    void createPerlinNoiseGround(unsigned int seed, float amplitude, float lengthScale, float deltaZ);
-    void createGround(GroundType type);
+    CPGrid &ground();
+    CPGrid &solution();
 };
 
 #endif // WAVESOLVER_H

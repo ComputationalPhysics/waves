@@ -128,15 +128,10 @@ public slots:
 
 signals:
     void zoomChanged(float arg);
-
     void tiltChanged(double arg);
-
     void panChanged(double arg);
-
     void rollChanged(double arg);
-
     void runningChanged(bool arg);
-
     void previousStepCompletedChanged(bool arg);
 
 private slots:
@@ -151,6 +146,7 @@ private:
     float m_roll;
     bool  m_running;
     QElapsedTimer m_timer;
+    int   m_steps;
 
     bool m_previousStepCompleted;
 };

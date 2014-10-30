@@ -1,4 +1,24 @@
 #include "cpgrid.h"
+#include "perlinnoise.h"
+#include "cptimer.h"
+
+CPGrid::CPGrid() :
+    m_gridSize(0),
+    m_funcs(0),
+    m_program(0),
+    m_indicesDirty(true)
+{
+    m_gridType = GridType::Water;
+    setShaders();
+}
+
+CPGrid::~CPGrid() {
+    if(m_funcs)  delete m_funcs;
+    if(m_program) delete m_program;
+    m_vertices.clear();
+    m_indices.clear();
+    m_triangles.clear();
+}
 
 void CPGrid::zeros()
 {
@@ -32,6 +52,7 @@ void CPGrid::setGridType(const GridType &gridType)
         createShaderProgram();
     }
 }
+
 void CPGrid::createShaderProgram()
 {
     if (!m_program) {
@@ -59,25 +80,11 @@ void CPGrid::generateVBOs()
 
 void CPGrid::ensureInitialized()
 {
-    if(!m_funcs) m_funcs = new QOpenGLFunctions(QOpenGLContext::currentContext());
-    generateVBOs();
-}
-
-CPGrid::CPGrid() :
-    m_gridSize(0),
-    m_funcs(0),
-    m_program(0)
-{
-    m_gridType = GridType::Water;
-    setShaders();
-}
-
-CPGrid::~CPGrid() {
-    if(m_funcs)  delete m_funcs;
-    if(m_program) delete m_program;
-    m_vertices.clear();
-    m_indices.clear();
-    m_triangles.clear();
+    if(!m_funcs) {
+        m_funcs = new QOpenGLFunctions(QOpenGLContext::currentContext());
+        generateVBOs();
+        createShaderProgram();
+    }
 }
 
 void CPGrid::for_each(std::function<void (CPPoint &p)> action)
@@ -149,25 +156,37 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
             m_triangles.push_back(triangle2);
         }
     });
+
+    qDebug() << "Setting indices to dirty";
+    m_indicesDirty = true;
 }
 
 void CPGrid::calculateNormals() {
+    CPTimer::normalVectors().start();
     for(CPTriangle &triangle : m_triangles) {
         triangle.calculateNormal();
     }
+    CPTimer::normalVectors().stop();
 }
 
 void CPGrid::uploadVBO() {
     ensureInitialized();
     if(m_gridType == GridType::Water) calculateNormals();
 
+    CPTimer::uploadVBO().start();
     // Transfer vertex data to VBO 0
     m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
     m_funcs->glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(CPPoint), &m_vertices[0], GL_STATIC_DRAW);
 
-    // Transfer index data to VBO 1
-    m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
-    m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
+    if(m_indicesDirty) {
+        qDebug() << "Uploading indices on " << this;
+        // Transfer index data to VBO 1
+        m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
+        m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
+
+        CPTimer::uploadVBO().stop();
+        m_indicesDirty = false;
+    }
 }
 
 void CPGrid::setShaders()
@@ -185,16 +204,16 @@ void CPGrid::setShaders()
             "}";
 
     m_waterFragmentShader =
-            "uniform vec3 lightpos; \n"
-            "uniform vec3 targetdir; \n"
+            "uniform highp vec3 lightpos; \n"
+            "uniform highp vec3 targetdir; \n"
             "varying highp vec3 normal;"
             "varying highp vec3 mypos;\n"
             "void main() {\n"
-            "  vec3 normal2 = vec3(0.0, 0.0, 1.0);"
-            "  vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
-            "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
-            "  float shininess = 40.0;"
-            "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  highp vec3 normal2 = vec3(0.0, 0.0, 1.0);"
+            "  highp vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
+            "  highp float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
+            "  highp float shininess = 40.0;"
+            "  highp float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
             "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
             "  gl_FragColor.w = 0.7;"
             "}";
@@ -203,32 +222,29 @@ void CPGrid::setShaders()
             "attribute highp vec4 a_position;\n"
             "attribute highp vec3 a_normal;\n"
             "uniform highp mat4 modelViewProjectionMatrix;\n"
-            "varying vec3 normal; \n"
-            "varying vec3 mypos; \n"
+            "varying highp vec3 normal; \n"
+            "varying highp vec3 mypos; \n"
             "void main(void) \n"
             "{ \n"
-            "   highp vec4 adjustedPosition = a_position;\n"
-            "   adjustedPosition.z -= 0.0;\n"
             "	normal = a_normal; \n"
             "	mypos = a_position.xyz; \n"
-//            "   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-            "   gl_Position = modelViewProjectionMatrix * adjustedPosition;\n"
+            "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
 
     m_groundFragmentShader =
-            "uniform vec3 lightpos; \n"
-            "uniform vec3 targetdir; \n"
-            "varying vec3 normal; \n"
-            "varying vec3 mypos; \n"
+            "uniform highp vec3 lightpos; \n"
+            "uniform highp vec3 targetdir; \n"
+            "varying highp vec3 normal; \n"
+            "varying highp vec3 mypos; \n"
+            "highp float rand(highp vec2 co){\n"
+            "    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);\n"
+            "}\n"
             "void main(void)\n"
             "{\n "
-            "  vec4 val = vec4(0.7,0.5,0.3,1);"
-//            "  if(mypos.z > 1.1) {"
-//            "      val = vec4(10.0*(mypos.z-1.0),10.0*(mypos.z-1.0),10.0*(mypos.z-1.0),1.0);"
-//            "  }                  "
-            "  float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);"
-            "  float shininess = 100.0;"
-            "  float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  highp vec4 val = vec4(0.7,0.5,0.3,1);"
+            "  highp float light = clamp(dot(normalize(lightpos), normal), 0.2, 1.0);"
+            "  highp float shininess = 100.0;"
+            "  highp float specular = 0.1*pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
             "  gl_FragColor = val*light + vec4(1,1,1,1)*specular; \n"
             "  gl_FragColor.w = 1.0;"
             "}\n";
@@ -239,18 +255,23 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4
     ensureInitialized();
     uploadVBO();
 
-    createShaderProgram();
+    CPTimer::rendering().start();
     m_program->bind();
 
     QVector3D cameraDirection;
+    QVector3D lightPos(2,2,2);
     cameraDirection.setX(-modelViewMatrix(2,0));
     cameraDirection.setY(-modelViewMatrix(2,1));
     cameraDirection.setZ(-modelViewMatrix(2,2));
     cameraDirection.normalize();
 
+    lightPos.setX(modelViewMatrix(0,0));
+    lightPos.setY(modelViewMatrix(1,1));
+    lightPos.setZ(modelViewMatrix(2,2));
+
     m_program->setUniformValue("modelViewProjectionMatrix", modelViewProjectionMatrix);
     m_program->setUniformValue("targetdir", cameraDirection);
-    m_program->setUniformValue("lightpos",  QVector3D(1,1,1));
+    m_program->setUniformValue("lightpos",  lightPos);
 
     // Tell OpenGL which VBOs to use
     m_funcs->glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
@@ -275,8 +296,50 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Draw cube geometry using indices from VBO 1
+    CPTimer::drawElements().start();
     m_funcs->glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_SHORT, 0);
+    CPTimer::drawElements().stop();
     glDisable(GL_BLEND);
 
     m_program->release();
+    CPTimer::rendering().stop();
+}
+
+void CPGrid::createPerlin(unsigned int seed, float amplitude, float lengthScale, float deltaZ)
+{
+    PerlinNoise perlin(seed);
+
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float x = i/float(gridSize);
+        float y = j/float(gridSize);
+
+        float z = amplitude*(perlin.noise(x*lengthScale,y*lengthScale,0)) + deltaZ;
+        p.position.setZ(z);
+    });
+
+    calculateNormals();
+}
+
+void CPGrid::createDoubleSlit()
+{
+    int slitSize = 2;
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        bool wall = i==0 || i==(gridSize-1) || j==0 || j==(gridSize-1);
+        int slit1 = gridSize/2 + 4;
+        int slit2 = gridSize/2 - 4;
+
+        wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
+
+        float z = wall ? 0.2 : -0.5;
+        p.position.setZ(z);
+    });
+
+    calculateNormals();
+}
+
+void CPGrid::copyGridFrom(CPGrid &grid)
+{
+    grid.for_each([&](CPPoint &p, int i, int j) {
+        m_vertices[index(i,j)] = p;
+    });
 }

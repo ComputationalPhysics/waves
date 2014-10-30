@@ -2,7 +2,7 @@
 #include "cpgrid.h"
 #include <iostream>
 
-WaveSolver Simulator::solver() const
+WaveSolver &Simulator::solver()
 {
     return m_solver;
 }

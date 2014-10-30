@@ -4,14 +4,17 @@ TARGET = waves
 QT += qml quick widgets opengl openglextensions
 CONFIG += c++11
 
-QMAKE_CXXFLAGS += -stdlib=libc++
+mac {
+    #QMAKE_CXXFLAGS += -stdlib=libc++
+}
 
 SOURCES += main.cpp \
     waves.cpp \
     simulator.cpp \
     cpgrid.cpp \
     wavesolver.cpp \
-    perlinnoise.cpp
+    perlinnoise.cpp \
+    cptimer.cpp
 
 RESOURCES += qml.qrc
 
@@ -26,4 +29,8 @@ HEADERS += \
     simulator.h \
     cpgrid.h \
     wavesolver.h \
-    perlinnoise.h
+    perlinnoise.h \
+    cptimer.h
+
+#QMAKE_CXX = g++-4.9
+#QMAKE_CC = gcc-4.9

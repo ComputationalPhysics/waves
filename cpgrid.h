@@ -50,6 +50,7 @@ private:
 
     int m_gridSize;
     GridType m_gridType;
+    bool m_indicesDirty;
 
     // OpenGL stuff
     GLuint m_vboIds[2];
@@ -91,6 +92,10 @@ public:
     void setVertices(const std::vector<CPPoint> &vertices);
     GridType getGridType() const;
     void setGridType(const GridType &GridType);
+
+    void createPerlin(unsigned int seed, float amplitude, float lengthScale, float deltaZ);
+    void createDoubleSlit();
+    void copyGridFrom(CPGrid &grid);
 };
 
 #endif // CPGRID_H

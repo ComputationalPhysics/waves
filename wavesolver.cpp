@@ -15,9 +15,14 @@ float WaveSolver::dr() const
 }
 
 
-CPGrid WaveSolver::ground() const
+CPGrid &WaveSolver::ground()
 {
     return m_ground;
+}
+
+CPGrid &WaveSolver::solution()
+{
+    return m_solution;
 }
 
 void WaveSolver::calculateWalls()
@@ -51,22 +56,25 @@ void WaveSolver::calculateMean()
 }
 
 WaveSolver::WaveSolver() :
-    m_dampingFactor(1),
+    m_dampingFactor(0),
     m_gridSize(0),
     m_dr(0),
     m_rMin(-1),
     m_rMax(1),
     m_length(2),
-    m_averageValue(0)
+    m_averageValue(0.0)
 {
     m_ground.setGridType(GridType::Ground);
-    setGridSize(128);
-    float amplitude = 0.5;
+    m_rMin = -5;
+    m_rMax = 5;
     float length = m_rMax-m_rMin;
     setLength(length);
+    setGridSize(256);
+
     float x0 = 0;
-    float y0 = 0;
-    float standardDeviation = 0.1;
+    float y0 = -1.5;
+    float amplitude = 0.3;
+    float standardDeviation = 0.05;
     double maxValue = 0;
     applyAction([&](int i, int j) {
         float x = m_rMin+i*m_dr;
@@ -81,35 +89,12 @@ WaveSolver::WaveSolver() :
     applyAction([&](int i, int j) {
         m_solutionPrevious(i,j) *= amplitude/std::max(maxValue, 1.0);
         m_solution(i,j) *= amplitude/std::max(maxValue, 1.0);
+        m_ground(i,j) = -1;
     });
 
-    createGround(GroundType::PerlinNoise);
+    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+    // m_ground.createDoubleSlit();
     calculateWalls();
-}
-
-void WaveSolver::createGround(GroundType type) {
-    if(type == GroundType::PerlinNoise) {
-        createPerlinNoiseGround(0, 0.5, 5.0, -0.4);
-
-    } else if(type == GroundType::Slope) {
-        applyAction([&](int i, int j, int gridSize) {
-            float height = 0.5 - 2*i/float(gridSize);
-            m_ground(i,j) = height;
-        });
-    }
-
-    m_ground.calculateNormals();
-}
-
-void WaveSolver::createPerlinNoiseGround(unsigned int seed, float amplitude, float lengthScale, float deltaZ) {
-    PerlinNoise perlin(seed);
-    m_ground.for_each([&](CPPoint &p, int i, int j, int gridSize) {
-        float x = i/float(gridSize);
-        float y = j/float(gridSize);
-
-        float z = amplitude*(perlin.noise(x*lengthScale,y*lengthScale,0)) + deltaZ;
-        p.position.setZ(z);
-    });
 }
 
 void WaveSolver::setGridSize(int gridSize)
@@ -153,7 +138,6 @@ void WaveSolver::step(float dt)
 
     // calculateSource();
 
-    // #pragma omp parallel for private(cx_m, cx_p,cy_m, cy_p, c, ddx, ddy, ddt_rest,i,j) num_threads(1)
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
             float c = calcC(i,j); // wave speed
@@ -164,7 +148,7 @@ void WaveSolver::step(float dt)
             float cy_p = 0.5*(c+calcC(i,j+1));
 
             float ddx = cx_p*( solution(i,j,1,0)   - m_solution(i,j)) - cx_m*( m_solution(i,j) - solution(i,j,-1,0) );
-            float ddy = cy_p*( solution(i,j,0,1)   - m_solution(i,j) ) - cy_m*( m_solution(i,j) - solution(i,j,0,-1) );
+            float ddy = cy_p*( solution(i,j,0,1)   - m_solution(i,j)) - cy_m*( m_solution(i,j) - solution(i,j,0,-1) );
             float ddt_rest = -(1-0.5*m_dampingFactor*dt)*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
             // Set value to zero if we have a wall.
@@ -172,10 +156,9 @@ void WaveSolver::step(float dt)
         }
     }
 
-    m_solutionPrevious = m_solution;
-    m_solution = m_solutionNext;
+    m_solutionPrevious.copyGridFrom(m_solution);
+    m_solution.copyGridFrom(m_solutionNext);
 
     calculateWalls();
-    calculateMean();// Switched this and next line
     m_source.zeros();
 }
