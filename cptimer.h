@@ -40,6 +40,8 @@ public:
     CPTimingObject m_uploadVBO;
     CPTimingObject m_drawElements;
     CPTimingObject m_sync;
+    CPTimingObject m_copyData;
+    CPTimingObject m_temp;
 
     static CPTimingObject &computeTimestep() { return CPTimer::getInstance().m_computeTimestep; }
     static CPTimingObject &normalVectors() { return CPTimer::getInstance().m_normalVectors; }
@@ -47,6 +49,8 @@ public:
     static CPTimingObject &uploadVBO() { return CPTimer::getInstance().m_uploadVBO; }
     static CPTimingObject &drawElements() { return CPTimer::getInstance().m_drawElements; }
     static CPTimingObject &sync() { return CPTimer::getInstance().m_sync; }
+    static CPTimingObject &copyData() { return CPTimer::getInstance().m_copyData; }
+    static CPTimingObject &temp() { return CPTimer::getInstance().m_temp; }
     static double totalTime() { return CPTimer::getInstance().m_timer.elapsed() / double(1000); }
 };
 

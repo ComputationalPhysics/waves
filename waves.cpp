@@ -135,12 +135,16 @@ void Waves::sync()
         float uploadVBOFraction = round(10000*CPTimer::uploadVBO().elapsedTime() / CPTimer::totalTime())/100;
         float drawElementsFraction = round(10000*CPTimer::drawElements().elapsedTime() / CPTimer::totalTime())/100;
         float syncFraction = round(10000*CPTimer::sync().elapsedTime() / CPTimer::totalTime())/100;
+        float tempFraction = round(10000*CPTimer::temp().elapsedTime() / CPTimer::totalTime())/100;
+        float copyDataFraction = round(10000*CPTimer::copyData().elapsedTime() / CPTimer::totalTime())/100;
         qDebug() << endl <<"Computing timesteps: " << CPTimer::computeTimestep().elapsedTime() << " s (" << computeTimestepFraction << "%)";
         qDebug() << "Normal vectors: " << CPTimer::normalVectors().elapsedTime() << " s (" << normalVectorsFraction << "%)";
         qDebug() << "Upload VBO: " << CPTimer::uploadVBO().elapsedTime() << " s (" << uploadVBOFraction << "%)";
         qDebug() << "Draw elements: " << CPTimer::drawElements().elapsedTime() << " s (" << drawElementsFraction << "%)";
         qDebug() << "Sync: " << CPTimer::sync().elapsedTime() << " s (" << syncFraction << "%)";
         qDebug() << "Rendering: " << CPTimer::rendering().elapsedTime() << " s (" << renderingFraction << "%)";
+        qDebug() << "Temp: " << CPTimer::temp().elapsedTime() << " s (" << tempFraction << "%)";
+        qDebug() << "Copy data: " << CPTimer::copyData().elapsedTime() << " s (" << copyDataFraction << "%)";
         qDebug() << "Timestep: " << safeDt;
     }
 
