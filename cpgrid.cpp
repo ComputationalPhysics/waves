@@ -157,7 +157,6 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
         }
     });
 
-    qDebug() << "Setting indices to dirty";
     m_indicesDirty = true;
 }
 
@@ -179,7 +178,8 @@ void CPGrid::uploadVBO() {
     m_funcs->glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(CPPoint), &m_vertices[0], GL_STATIC_DRAW);
 
     if(m_indicesDirty) {
-        qDebug() << "Uploading indices on " << this;
+        qDebug() << "Uploading " << m_indices.size() << " indices with total size " << m_indices.size() *sizeof(GLushort) << " bytes.";
+        qDebug() << "This corresponds to " << m_vertices.size() << " vertices with total size " << m_vertices.size() *sizeof(CPPoint) << " bytes.";
         // Transfer index data to VBO 1
         m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
         m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
