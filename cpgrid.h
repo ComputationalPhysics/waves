@@ -32,7 +32,8 @@ public:
         CPPoint &p1 = allPoints[pointIndices[1]];
         CPPoint &p2 = allPoints[pointIndices[2]];
         // normal = QVector3D::crossProduct(points[2]->position - points[0]->position, points[1]->position - points[0]->position).normalized();
-        normal = QVector3D::crossProduct(p2.position - p0.position, p1.position - p0.position).normalized();
+        // normal = QVector3D::crossProduct(p2.position - p0.position, p1.position - p0.position).normalized();
+        normal = QVector3D::crossProduct(p2.position - p0.position, p1.position - p0.position);
         p0.normal = normal;
         p1.normal = normal;
         p2.normal = normal;

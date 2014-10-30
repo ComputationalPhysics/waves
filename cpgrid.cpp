@@ -226,9 +226,9 @@ void CPGrid::setShaders()
             "void main() {\n"
             "  highp vec3 normal2 = vec3(0.0, 0.0, 1.0);"
             "  highp vec4 val = vec4(0.2,0.25,1.0,1.0);\n"
-            "  highp float light = clamp(dot(normalize(lightpos), normal), 0.0, 1.0);\n"
+            "  highp float light = clamp(dot(normalize(lightpos), normalize(normal)), 0.0, 1.0);\n"
             "  highp float shininess = 40.0;"
-            "  highp float specular = pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  highp float specular = pow(clamp(dot(reflect(-normalize(lightpos), normalize(normal)), targetdir), 0.0, 1.0), shininess);"
             "  gl_FragColor = val*light + specular*vec4(1,1,1,1); \n"
             "  gl_FragColor.w = 0.7;"
 //            "  gl_FragColor = vec4( (mypos.x+5.0)/10.0, (mypos.y+5.0)/10.0, 0.0, 1.0);\n" // For touch detection
@@ -258,9 +258,9 @@ void CPGrid::setShaders()
             "void main(void)\n"
             "{\n "
             "  highp vec4 val = vec4(0.7,0.5,0.3,1);"
-            "  highp float light = clamp(dot(normalize(lightpos), normal), 0.2, 1.0);"
+            "  highp float light = clamp(dot(normalize(lightpos), normalize(normal)), 0.2, 1.0);"
             "  highp float shininess = 100.0;"
-            "  highp float specular = 0.1*pow(clamp(dot(reflect(-normalize(lightpos), normal), targetdir), 0.0, 1.0), shininess);"
+            "  highp float specular = 0.1*pow(clamp(dot(reflect(-normalize(lightpos), normalize(normal)), targetdir), 0.0, 1.0), shininess);"
             "  gl_FragColor = val*light + vec4(1,1,1,1)*specular; \n"
             "  gl_FragColor.w = 1.0;"
             "}\n";
