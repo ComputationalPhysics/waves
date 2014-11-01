@@ -8,58 +8,6 @@
 
 #include <cmath>
 
-float WaveSolver::averageValue() const
-{
-    return m_averageValue;
-}
-
-
-float WaveSolver::dr() const
-{
-    return m_dr;
-}
-
-
-CPGrid &WaveSolver::ground()
-{
-    return m_ground;
-}
-
-CPGrid &WaveSolver::solution()
-{
-    return m_solution;
-}
-
-void WaveSolver::calculateWalls()
-{
-    calculateMean();
-    for(unsigned int i=0;i<gridSize();i++) {
-        for(unsigned int j=0;j<gridSize();j++) {
-            int oldValue = m_walls(i,j);
-            m_walls(i,j) = m_ground(i,j) > m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
-            if(oldValue != m_walls(i,j)) {
-                m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
-            }
-        }
-    }
-}
-
-void WaveSolver::calculateMean()
-{
-    m_averageValue = 0;
-    unsigned int count = 0;
-    for(unsigned int i=0;i<gridSize();i++) {
-        for(unsigned int j=0;j<gridSize();j++) {
-            if(!m_walls(i,j)) {
-                m_averageValue += m_solutionNext(i,j);
-                count++;
-            }
-        }
-    }
-
-    m_averageValue /= count;
-}
-
 WaveSolver::WaveSolver() :
     m_dampingFactor(0.1),
     m_gridSize(0),
@@ -87,8 +35,8 @@ WaveSolver::WaveSolver() :
         float x = m_rMin+i*m_dr;
         float y = m_rMin+j*m_dr;
 
-        m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
-        m_solution(i,j) = m_solutionPrevious(i,j);
+        // m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
+        // m_solution(i,j) = m_solutionPrevious(i,j);
 
         maxValue = std::max(maxValue,fabs(m_solution(i,j)));
     });
@@ -103,6 +51,64 @@ WaveSolver::WaveSolver() :
     // m_ground.createDoubleSlit();
     // m_ground.createSinus();
     calculateWalls();
+}
+
+float WaveSolver::averageValue() const
+{
+    return m_averageValue;
+}
+
+
+float WaveSolver::dr() const
+{
+    return m_dr;
+}
+
+
+CPGrid &WaveSolver::ground()
+{
+    return m_ground;
+}
+
+CPGrid &WaveSolver::solution()
+{
+    return m_solution;
+}
+
+
+CPBox &WaveSolver::box()
+{
+    return m_box;
+}
+
+void WaveSolver::calculateWalls()
+{
+    calculateMean();
+    for(unsigned int i=0;i<gridSize();i++) {
+        for(unsigned int j=0;j<gridSize();j++) {
+            // int oldValue = m_walls(i,j);
+            m_walls(i,j) = m_ground(i,j) >=m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
+            if(m_walls(i,j)) {
+                // m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
+            }
+        }
+    }
+}
+
+void WaveSolver::calculateMean()
+{
+    m_averageValue = 0;
+    unsigned int count = 0;
+    for(unsigned int i=0;i<gridSize();i++) {
+        for(unsigned int j=0;j<gridSize();j++) {
+            if(!m_walls(i,j)) {
+                m_averageValue += m_solutionNext(i,j);
+                count++;
+            }
+        }
+    }
+
+    m_averageValue /= count;
 }
 
 void WaveSolver::setGridSize(int gridSize)
@@ -121,6 +127,7 @@ void WaveSolver::setLength(float length)
 {
     m_length = length;
     m_dr = m_length / (gridSize()-1);
+    m_box.update(QVector3D(-m_length/2, -m_length/2, -0.2), QVector3D(m_length, m_length, 0.4));
 }
 
 void WaveSolver::applyAction(std::function<void(int i, int j)> action) {
@@ -160,10 +167,9 @@ void WaveSolver::step(float dt)
     float factor2 = -(1.0-0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 
-    // calculateSource();
-
     CPTimer::temp().start();
     for(unsigned int i=0;i<gridSize();i++) {
+#pragma clang loop vectorize(enable) interleave(enable)
         for(unsigned int j=0;j<gridSize();j++) {
 #ifdef CONSTANTWAVESPEED
             float ddx = solution(i,j,1,0) + solution(i,j,-1,0);
@@ -172,7 +178,6 @@ void WaveSolver::step(float dt)
 
             // Set value to zero if we have a wall.
             m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
-            // m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest);
 #else
             float c = calcC(i,j); // wave speed
 
@@ -196,7 +201,7 @@ void WaveSolver::step(float dt)
     m_solution.swapWithGrid(m_solutionNext);
     CPTimer::copyData().stop();
 
-    // calculateWalls();
+    calculateWalls();
 }
 
 #if defined(__ARM_NEON)

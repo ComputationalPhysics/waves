@@ -13,6 +13,17 @@ class CPPoint
 public:
     QVector3D position;
     QVector3D normal;
+
+    CPPoint() { }
+
+    CPPoint(QVector3D pos) {
+        position = pos;
+    }
+
+    CPPoint(QVector3D pos, QVector3D norm) {
+        position = pos;
+        normal = norm;
+    }
 };
 
 class CPTriangle

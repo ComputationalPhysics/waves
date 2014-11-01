@@ -55,8 +55,10 @@ void WavesRenderer::paint() {
     if(m_simulator) {
         QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
         QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
+        m_simulator->solver().box().render(modelViewProjectionMatrix);
         m_simulator->solver().ground().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
         m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
+
     }
 
 }

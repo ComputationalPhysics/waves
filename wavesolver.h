@@ -1,6 +1,8 @@
 #ifndef WAVESOLVER_H
 #define WAVESOLVER_H
 #include "cpgrid.h"
+#include "cpbox.h"
+
 #include <functional>
 
 enum class GroundType {Slope = 0, PerlinNoise = 1};
@@ -14,6 +16,7 @@ private:
     CPGrid m_ground;
     CPGrid m_walls;
     CPGrid m_source;
+    CPBox  m_box;
     float  m_dampingFactor;
     int    m_gridSize;
     float  m_dr;
@@ -56,6 +59,7 @@ public:
     CPGrid &ground();
     CPGrid &solution();
     void createRandomGauss();
+    CPBox &box();
 };
 
 #endif // WAVESOLVER_H

@@ -4,6 +4,7 @@ TARGET = waves
 QT += qml quick widgets opengl openglextensions
 CONFIG += c++11
 DEFINES += CONSTANTWAVESPEED
+
 mac {
     #QMAKE_CXXFLAGS += -stdlib=libc++
 }
@@ -14,7 +15,8 @@ SOURCES += main.cpp \
     cpgrid.cpp \
     wavesolver.cpp \
     perlinnoise.cpp \
-    cptimer.cpp
+    cptimer.cpp \
+    cpbox.cpp
 
 RESOURCES += qml.qrc
 
@@ -30,7 +32,8 @@ HEADERS += \
     cpgrid.h \
     wavesolver.h \
     perlinnoise.h \
-    cptimer.h
+    cptimer.h \
+    cpbox.h
 
 #QMAKE_CXX = g++-4.9
 #QMAKE_CC = gcc-4.9
