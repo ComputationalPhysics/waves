@@ -36,7 +36,7 @@ void WaveSolver::calculateWalls()
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
             int oldValue = m_walls(i,j);
-            m_walls(i,j) = m_ground(i,j) > m_averageValue;
+            m_walls(i,j) = m_ground(i,j) > m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
             if(oldValue != m_walls(i,j)) {
                 m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
             }
@@ -76,7 +76,7 @@ WaveSolver::WaveSolver() :
     m_rMax = 5;
     float length = m_rMax-m_rMin;
     setLength(length);
-    setGridSize(130);
+    setGridSize(200);
 
     float x0 = 0;
     float y0 = -1.5;
@@ -99,7 +99,7 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    // m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
     // m_ground.createDoubleSlit();
     // m_ground.createSinus();
     calculateWalls();
@@ -172,6 +172,7 @@ void WaveSolver::step(float dt)
 
             // Set value to zero if we have a wall.
             m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+            // m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest);
 #else
             float c = calcC(i,j); // wave speed
 
@@ -195,8 +196,7 @@ void WaveSolver::step(float dt)
     m_solution.swapWithGrid(m_solutionNext);
     CPTimer::copyData().stop();
 
-    calculateWalls();
-    m_source.zeros();
+    // calculateWalls();
 }
 
 #if defined(__ARM_NEON)

@@ -340,6 +340,9 @@ void CPGrid::createPerlin(unsigned int seed, float amplitude, float lengthScale,
         float y = j/float(gridSize);
 
         float z = amplitude*(perlin.noise(x*lengthScale,y*lengthScale,0)) + deltaZ;
+        if(i==0 || i == gridSize-1 || j==0 || j==gridSize-1) {
+            z = 0.2;
+        }
         p.position.setZ(z);
     });
 
@@ -350,7 +353,7 @@ void CPGrid::createDoubleSlit()
 {
     int slitSize = 3;
     for_each([&](CPPoint &p, int i, int j, int gridSize) {
-        bool wall = i==0 || i==(gridSize-1) || j==0 || j==(gridSize-1);
+        bool wall = i==0 || i==gridSize-1 || j==0 || j==gridSize-1;
         int slit1 = gridSize/2 + 6;
         int slit2 = gridSize/2 - 6;
 
@@ -370,8 +373,8 @@ void CPGrid::createSinus()
         float omega = 1.0;
         float x0 = 0.1*sin(y*omega);
         float x = (i-gridSize/2) / float(gridSize);
-
-        bool wall = fabs(x-x0) > 0.05;
+        bool wall = i==0 || i==gridSize-1 || j==0 || j==gridSize-1;
+        wall |= fabs(x-x0) > 0.05;
 
         float z = wall ? 0.2 : -0.5;
         p.position.setZ(z);

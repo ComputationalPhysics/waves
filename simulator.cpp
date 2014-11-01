@@ -13,5 +13,5 @@ Simulator::Simulator()
 }
 
 void Simulator::step(double dt) {
-    m_solver.stepSIMD(dt);
+    m_solver.step(dt);
 }

@@ -75,6 +75,7 @@ Temp:  6.06  s ( 42.46 %)
 Copy data:  0  s ( 0 %)
 Timestep:  0.0277297
 
+130!!!
 With SIMD
 Computing timesteps:  2.892  s ( 23.6 %)
 Normal vectors:  3.677  s ( 30.01 %)
@@ -85,3 +86,16 @@ Rendering:  0.083  s ( 0.68 %)
 Temp:  0  s ( 0 %)
 Copy data:  0.057  s ( 0.47 %)
 Timestep:  0.0548145
+
+Whitout SIMD, but no wall check...same as SIMD :(
+Computing timesteps:  2.847  s ( 23.26 %)
+Normal vectors:  3.718  s ( 30.38 %)
+Upload VBO:  0.009  s ( 0.07 %)
+Draw elements:  0.084  s ( 0.69 %)
+Sync:  2.871  s ( 23.46 %)
+Rendering:  0.086  s ( 0.7 %)
+Temp:  2.84  s ( 23.2 %)
+Copy data:  0  s ( 0 %)
+Timestep:  0.0548145
+
+256!!!
