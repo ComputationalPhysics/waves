@@ -2,6 +2,10 @@
 #include "perlinnoise.h"
 #include "cptimer.h"
 
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
+
 #include <cmath>
 
 float WaveSolver::averageValue() const
@@ -72,7 +76,7 @@ WaveSolver::WaveSolver() :
     m_rMax = 5;
     float length = m_rMax-m_rMin;
     setLength(length);
-    setGridSize(256);
+    setGridSize(130);
 
     float x0 = 0;
     float y0 = -1.5;
@@ -194,3 +198,96 @@ void WaveSolver::step(float dt)
     calculateWalls();
     m_source.zeros();
 }
+
+#if defined(__ARM_NEON)
+void WaveSolver::stepSIMD(float dt)
+{
+    m_solution.updateZFromGrid();
+    m_solutionPrevious.updateZFromGrid();
+    const float factor_ = 1.0/(1+0.5*m_dampingFactor*dt);
+    const float factor2_ = -(1.0-0.5*m_dampingFactor*dt);
+    float32_t factor = factor_;
+    float32_t factor2 = factor2_;
+    float32_t dtdtOverdrdr = dt*dt/(m_dr*m_dr);
+
+    // ONE SIMD LOOP ------------------------------------------------------------------------
+    float32_t *nextSol = &m_solutionNext[m_solutionNext.index(1,1)];
+    float *pSol = &m_solution[m_solution.index(1,1)];
+    float *pPrevSol = &m_solutionPrevious[m_solutionPrevious.index(1,1)];
+    float *pSolDxp = &m_solution[m_solution.index(2,1)];
+    float *pSolDxn = &m_solution[m_solution.index(0,1)];
+    float *pSolDyp = &m_solution[m_solution.index(1,2)];
+    float *pSolDyn = &m_solution[m_solution.index(1,0)];
+
+    // This for loop skips the first row (i=0) and the last (i=gridSize()-1) because of boundary conditions.
+    // TODO: Fix this by adding ghost rows in m_z in cpgrid.
+
+    for(unsigned int n=gridSize(); n<gridSize()*(gridSize()-1); n += 4) {
+        float32x4_t sol = vld1q_f32(pSol);       // u(i,j)
+        float32x4_t prevSol = vld1q_f32(pPrevSol);       // u_prev(i,j)
+        float32x4_t solDxp = vld1q_f32(pSolDxp);    // u(i+1,j)
+        float32x4_t solDxn = vld1q_f32(pSolDxn);   // u(i-1,j)
+        float32x4_t solDyp = vld1q_f32(pSolDyp);  // u(i,j+1)
+        float32x4_t solDyn = vld1q_f32(pSolDyn);  // u(i,j-1)
+
+        float32x4_t ddx = vaddq_f32(solDxp, solDxn); // solution(i,j,1,0) + solution(i,j,-1,0);
+        float32x4_t ddy = vaddq_f32(solDyp, solDyn); // solution(i,j,0,1) + solution(i,j,0,-1) ;
+        float32x4_t ddt_rest = vmulq_n_f32(sol, 2);  // 2*m_solution(i,j);
+        ddt_rest = vmlaq_n_f32(ddt_rest, prevSol, factor2); // ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
+
+        float32x4_t next = vaddq_f32(ddx, ddy); // ddx + ddy
+        next = vmlaq_n_f32(next, sol, -4);      // ddx + ddy - 4*m_solution(i,j)
+        next = vmulq_n_f32(next, dtdtOverdrdr); // dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j))
+        next = vaddq_f32(next, ddt_rest);       // (dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest)
+        next = vmulq_n_f32(next, factor);       // factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest)
+
+        vst1q_f32(nextSol, next);
+
+        nextSol += 4; pSol +=4; pPrevSol+=4; pSolDxp += 4; pSolDxn += 4; pSolDyp += 4; pSolDyn += 4;
+    }
+
+    int i=0;
+    for(unsigned int  j=0; j<gridSize(); j++) {
+        float ddx = solution(i,j,1,0) + solution(i,j,-1,0);
+        float ddy = solution(i,j,0,1) + solution(i,j,0,-1) ;
+        float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
+
+        // Set value to zero if we have a wall.
+        m_solutionNext[m_solution.index(i,j)] = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+    }
+
+    i=gridSize()-1;
+    for(unsigned int j=0; j<gridSize(); j++) {
+        float ddx = solution(i,j,1,0) + solution(i,j,-1,0);
+        float ddy = solution(i,j,0,1) + solution(i,j,0,-1) ;
+        float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
+
+        // Set value to zero if we have a wall.
+        m_solutionNext[m_solution.index(i,j)] = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+    }
+
+    // ONE SIMD LOOP END------------------------------------------------------------------------
+
+    CPTimer::copyData().start();
+    m_solutionNext.updateGridFromZ();
+    m_solutionPrevious.swapWithGrid(m_solution);
+    m_solution.swapWithGrid(m_solutionNext);
+    CPTimer::copyData().stop();
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

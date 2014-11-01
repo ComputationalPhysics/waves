@@ -116,6 +116,15 @@ void CPGrid::for_each(std::function<void (CPPoint &p, int i, int j, int gridSize
     }
 }
 
+void CPGrid::for_each(std::function<void (CPPoint &p, int i, int j, int gridSize, int index)> action)
+{
+    for(int i=0; i<gridSize(); i++) {
+        for(int j=0; j<gridSize(); j++) {
+            action(m_vertices[index(i,j)], i, j, gridSize(), index(i,j));
+        }
+    }
+}
+
 void CPGrid::resize(int gridSize, float rMin, float rMax)
 {
     m_gridSize = gridSize;
@@ -127,6 +136,7 @@ void CPGrid::resize(int gridSize, float rMin, float rMax)
     m_triangles.reserve(numTriangles);
     m_indices.reserve(numIndices);
     m_vertices.resize(gridSize*gridSize);
+    m_z.resize(gridSize*gridSize);
 
     for_each([&](CPPoint &p, int i, int j) {
         p.position.setX(rMin + dr*i);
@@ -373,4 +383,18 @@ void CPGrid::createSinus()
 void CPGrid::swapWithGrid(CPGrid &grid)
 {
     m_vertices.swap(grid.vertices());
+}
+
+void CPGrid::updateGridFromZ()
+{
+    for_each([&](CPPoint &p, int i, int j, int gridSize, int index) {
+        p.position.setZ(m_z[index]);
+    });
+}
+
+void CPGrid::updateZFromGrid()
+{
+    for_each([&](CPPoint &p, int i, int j, int gridSize, int index) {
+        m_z[index] = p.position.z();
+    });
 }

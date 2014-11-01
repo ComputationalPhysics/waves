@@ -29,6 +29,7 @@ public:
     unsigned int gridSize() { return m_solution.gridSize(); }
     void setLength(float length);
     void step(float dt);
+    void stepSIMD(float dt);
 
     inline float calcC(int i, int j) {
         return std::max(-m_ground(i,j,true),1.0f);

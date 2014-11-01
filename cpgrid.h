@@ -48,6 +48,7 @@ private:
     std::vector<CPPoint>      m_vertices;
     std::vector<GLushort>     m_indices;
     std::vector<CPTriangle>   m_triangles;
+    std::vector<float>        m_z;
     QString                   m_waterVertexShader;
     QString                   m_waterFragmentShader;
     QString                   m_groundVertexShader;
@@ -62,11 +63,6 @@ private:
     QOpenGLFunctions *m_funcs;
     QOpenGLShaderProgram *m_program;
 
-    inline int index(int i, int j) {
-        return i*gridSize() + j;
-    }
-    inline int idx(int i) { return (i+gridSize()) % gridSize(); }
-
     void createShaderProgram();
     void generateVBOs();
     void ensureInitialized();
@@ -79,6 +75,11 @@ public:
     void for_each(std::function<void(CPPoint &p)> action);
     void for_each(std::function<void(CPPoint &p, int i, int j)> action);
     void for_each(std::function<void(CPPoint &p, int i, int j, int gridSize)> action);
+    void for_each(std::function<void(CPPoint &p, int i, int j, int gridSize, int index)> action);
+    inline int index(int i, int j) {
+        return i*gridSize() + j;
+    }
+    inline int idx(int i) { return (i+gridSize()) % gridSize(); }
 
     int gridSize() { return m_gridSize; }
     void resize(int gridSize, float rMin, float rMax);
@@ -88,6 +89,10 @@ public:
     }
     float &operator()(int i, int j) {
         return m_vertices[index(i, j)].position[2];
+    }
+
+    float &operator[](int i) {
+        return m_z[i];
     }
 
     void zeros();
@@ -102,7 +107,9 @@ public:
     void createDoubleSlit();
     void createSinus();
     void swapWithGrid(CPGrid &grid);
+    void updateGridFromZ();
 
+    void updateZFromGrid();
 };
 
 #endif // CPGRID_H
