@@ -9,7 +9,7 @@
 #include <cmath>
 
 WaveSolver::WaveSolver() :
-    m_dampingFactor(0),
+    m_dampingFactor(0.1),
     m_gridSize(0),
     m_dr(0),
     m_rMin(-1),
@@ -24,11 +24,11 @@ WaveSolver::WaveSolver() :
     m_rMax = 5;
     float length = m_rMax-m_rMin;
     setLength(length);
-    setGridSize(200);
+    setGridSize(256);
 
     float x0 = 0;
     float y0 = -1.5;
-    float amplitude = 2;
+    float amplitude = 1.0;
     float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
@@ -47,8 +47,8 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-//    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-     m_ground.createDoubleSlit();
+    m_ground.createPerlin(15, 2, 10.0, -1.0);
+//     m_ground.createDoubleSlit();
 //     m_ground.createSinus();
 //    calculateWalls();
 }
@@ -181,9 +181,6 @@ void WaveSolver::step(float dt)
 
             // Set value to zero if we have a wall.
             m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
-            if(m_ground(i,j) > 0 && m_solutionNext(i,j) < 0) {
-                m_solutionNext(i,j) = 0;
-            }
 #else
             float c = calcC(i,j); // wave speed
 
@@ -196,7 +193,11 @@ void WaveSolver::step(float dt)
             float ddy = cy_p*( solution(i,j,0,1)   - m_solution(i,j)) - cy_m*( m_solution(i,j) - solution(i,j,0,-1) );
             float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
-            m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
+            m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
+
+//            if(m_ground(i,j) > 0 && m_solutionNext(i,j) > m_ground(i,j)) {
+//                m_solutionNext(i,j) -= 0.1;
+//            }
 #endif
         }
     }
