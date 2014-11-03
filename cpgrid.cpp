@@ -203,12 +203,11 @@ void CPGrid::uploadVBO() {
     m_funcs->glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(CPPoint), &m_vertices[0], GL_STATIC_DRAW);
 
     if(m_indicesDirty) {
-        qDebug() << "Uploading " << m_indices.size() << " indices with total size " << m_indices.size() *sizeof(GLushort) << " bytes.";
+        qDebug() << "Uploading " << m_indices.size() << " indices with total size " << m_indices.size() *sizeof(index_t) << " bytes.";
         qDebug() << "This corresponds to " << m_vertices.size() << " vertices with total size " << m_vertices.size() *sizeof(CPPoint) << " bytes.";
         // Transfer index data to VBO 1
         m_funcs->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vboIds[1]);
-        m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLushort), &m_indices[0], GL_STATIC_DRAW);
-
+        m_funcs->glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(index_t), &m_indices[0], GL_STATIC_DRAW);
         CPTimer::uploadVBO().stop();
         m_indicesDirty = false;
     }
@@ -323,7 +322,7 @@ void CPGrid::renderAsTriangles(QMatrix4x4 &modelViewProjectionMatrix, QMatrix4x4
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Draw cube geometry using indices from VBO 1
     CPTimer::drawElements().start();
-    m_funcs->glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_SHORT, 0);
+    m_funcs->glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     CPTimer::drawElements().stop();
     glDisable(GL_BLEND);
 
@@ -357,9 +356,10 @@ void CPGrid::createDoubleSlit()
         int slit1 = gridSize/2 + 6;
         int slit2 = gridSize/2 - 6;
 
-        wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
+        wall |= (j==gridSize/2);// && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
+        // wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
 
-        float z = wall ? 0.2 : -0.5;
+        float z = wall ? 0.2 : -5;
         p.position.setZ(z);
     });
 
@@ -377,6 +377,22 @@ void CPGrid::createSinus()
         wall |= fabs(x-x0) > 0.05;
 
         float z = wall ? 0.2 : -0.5;
+        p.position.setZ(z);
+    });
+
+    calculateNormals();
+}
+
+void CPGrid::createLand()
+{
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float x = 2*(i-gridSize/2.0)/float(gridSize);
+        float y = 2*(j-gridSize/2.0)/float(gridSize);
+
+        bool wall = i==0 || i==gridSize-1 || j==0 || j==gridSize-1;
+        float height = y-0.5;
+
+        float z = wall ? 0.2 : height;
         p.position.setZ(z);
     });
 
@@ -401,3 +417,4 @@ void CPGrid::updateZFromGrid()
         m_z[index] = p.position.z();
     });
 }
+

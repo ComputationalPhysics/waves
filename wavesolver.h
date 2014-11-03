@@ -26,6 +26,7 @@ private:
     float  m_averageValue;
     void calculateWalls();
     void calculateMean();
+    void applySmoothing();
 public:
     WaveSolver();
     void setGridSize(int gridSize);
@@ -35,22 +36,44 @@ public:
     void stepSIMD(float dt);
 
     inline float calcC(int i, int j) {
-        return std::max(-m_ground(i,j,true),1.0f);
+        if(m_walls(i,j)) return 1.0;
+        else return std::min(-m_ground(i,j,true),1.0f);
     }
 
     inline float solution(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj,true)) {
-            return m_solution(i-di,j-dj,true);
+        if(m_ground(i+di, j+dj, true) > m_solution(i,j)) {
+            return m_solution(i-di, j-dj, true);
         }
-        return m_solution(i+di,j+dj, true);
+        else return m_solution(i+di, j+dj, true);
+
+//        if(m_walls(i+di,j+dj,true)) {
+//            if(m_walls(i-di,j-dj,true)) {
+//                // qDebug() << "Small channel on solution";
+//                return 0;
+//                // return m_solution(i,j);
+//            }
+//            return m_solution(i-di,j-dj,true);
+//        }
+//        return m_solution(i+di,j+dj, true);
     }
 
     inline float solutionPrevious(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj,true)) {
-            return m_solutionPrevious(i-di,j-dj,true);
+        if(m_ground(i+di, j+dj, true) > m_solutionPrevious(i,j)) {
+            return m_solutionPrevious(i-di, j-dj, true);
         }
+        else return m_solutionPrevious(i+di, j+dj, true);
 
-        return m_solutionPrevious(i+di,j+dj, true);
+//        if(m_walls(i+di,j+dj,true)) {
+//            if(m_walls(i-di,j-dj,true)) {
+//                // qDebug() << "Small channel on prev";
+//                return 0;
+//                //return m_solutionPrevious(i,j);
+//            }
+
+//            return m_solutionPrevious(i-di,j-dj,true);
+//        }
+
+//        return m_solutionPrevious(i+di,j+dj, true);
     }
     float averageValue() const;
     float dr() const;

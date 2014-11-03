@@ -58,7 +58,6 @@ void WavesRenderer::paint() {
         m_simulator->solver().box().render(modelViewProjectionMatrix);
         m_simulator->solver().ground().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
         m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
-
     }
 
 }
@@ -121,7 +120,7 @@ void Waves::sync()
     double dt = m_timer.restart() / 1000.0;
 
     double c_max = 1.0;       			// Used to determine dt and Nt
-    double safeDt = 1.0*m_simulator.solver().dr()/sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
+    double safeDt = 0.9*m_simulator.solver().dr()/sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
 
     if(m_running) {
         // Step if running

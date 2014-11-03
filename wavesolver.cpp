@@ -9,7 +9,7 @@
 #include <cmath>
 
 WaveSolver::WaveSolver() :
-    m_dampingFactor(0.1),
+    m_dampingFactor(0),
     m_gridSize(0),
     m_dr(0),
     m_rMin(-1),
@@ -24,19 +24,19 @@ WaveSolver::WaveSolver() :
     m_rMax = 5;
     float length = m_rMax-m_rMin;
     setLength(length);
-    setGridSize(200);
+    setGridSize(256);
 
     float x0 = 0;
     float y0 = -1.5;
-    float amplitude = 0.5;
+    float amplitude = 10.0;
     float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
         float x = m_rMin+i*m_dr;
         float y = m_rMin+j*m_dr;
 
-        // m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
-        // m_solution(i,j) = m_solutionPrevious(i,j);
+        m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
+        m_solution(i,j) = m_solutionPrevious(i,j);
 
         maxValue = std::max(maxValue,fabs(m_solution(i,j)));
     });
@@ -47,10 +47,12 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-    // m_ground.createDoubleSlit();
+    // m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+    m_ground.createDoubleSlit();
+    // m_ground.createLand();
     // m_ground.createSinus();
-    calculateWalls();
+
+    // calculateWalls();
 }
 
 float WaveSolver::averageValue() const
@@ -83,12 +85,28 @@ CPBox &WaveSolver::box()
 
 void WaveSolver::calculateWalls()
 {
+    return;
+
     calculateMean();
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
-            // int oldValue = m_walls(i,j);
-            m_walls(i,j) = m_ground(i,j) >=m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
-            if(m_walls(i,j)) {
+            int oldValue = m_walls(i,j);
+            // m_walls(i,j) = m_ground(i,j) > m_solution(i,j);
+
+            // m_walls(i,j) = m_ground(i,j) >= m_solution(i,j);// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
+            m_walls(i,j) = true;
+            if(!m_walls(i+1,j) && m_ground(i,j) < m_solution(i+1,j)) m_walls(i,j) = false;
+            if(!m_walls(i-1,j) && m_ground(i,j) < m_solution(i-1,j)) m_walls(i,j) = false;
+            if(!m_walls(i,j+1) && m_ground(i,j) < m_solution(i,j+1)) m_walls(i,j) = false;
+            if(!m_walls(i,j-1) && m_ground(i,j) < m_solution(i,j-1)) m_walls(i,j) = false;
+
+            // m_walls(i,j) = m_ground(i,j) > m_solution(i+1,j) && m_ground(i,j) > m_solution(i-1,j) && m_ground(i,j) > m_solution(i,j-1) && m_ground(i,j) > m_solution(i,j+1);
+
+            if(!m_walls(i,j) && m_walls(i,j) != oldValue) {
+                m_solutionPrevious(i,j) = m_solution(i,j) = m_ground(i,j)+0.01;
+            }
+
+            if(m_walls(i,j) && m_walls(i,j) != oldValue) {
                 // m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
             }
         }
@@ -121,6 +139,29 @@ void WaveSolver::setGridSize(int gridSize)
     m_source.resize(gridSize, m_rMin, m_rMax);
     m_gridSize = gridSize;
     m_dr = m_length / (gridSize-1);
+}
+
+void WaveSolver::applySmoothing() {
+    return;
+    float maxDiff = 0;
+    m_solution.for_each([&](CPPoint &p, int i, int j) {
+        if(m_walls(i,j)) return;
+
+        float diff = 0;
+        if(!m_walls(i+1,j)) diff = std::max(diff, p.position.z() - m_solution(i+1,j));
+        if(!m_walls(i-1,j)) diff = std::max(diff, p.position.z() - m_solution(i-1,j));
+        if(!m_walls(i,j+1)) diff = std::max(diff, p.position.z() - m_solution(i,j+1));
+        if(!m_walls(i,j-1)) diff = std::max(diff, p.position.z() - m_solution(i,j-1));
+
+        float diffDividedByDr = diff/m_dr;
+        if(diffDividedByDr > 8) {
+            float correctionFactor = 8/diffDividedByDr;
+            p.position[2] *= correctionFactor;
+            qDebug() << "Corrected a value.";
+        }
+
+        maxDiff = std::max(maxDiff, diffDividedByDr);
+    });
 }
 
 void WaveSolver::setLength(float length)
@@ -172,12 +213,13 @@ void WaveSolver::step(float dt)
 #pragma clang loop vectorize(enable) interleave(enable)
         for(unsigned int j=0;j<gridSize();j++) {
 #ifdef CONSTANTWAVESPEED
-            float ddx = solution(i,j,1,0) + solution(i,j,-1,0);
-            float ddy = solution(i,j,0,1) + solution(i,j,0,-1) ;
+            float ddx = solution(i,j,1,0) + solution(i,j,-1,0) - 2*m_solution(i,j);
+            float ddy = solution(i,j,0,1) + solution(i,j,0,-1) - 2*m_solution(i,j);
+
             float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
             // Set value to zero if we have a wall.
-            m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+            m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy) + ddt_rest + m_source(i,j));
 #else
             float c = calcC(i,j); // wave speed
 
@@ -194,6 +236,7 @@ void WaveSolver::step(float dt)
 #endif
         }
     }
+
     CPTimer::temp().stop();
 
     CPTimer::copyData().start();
@@ -201,7 +244,16 @@ void WaveSolver::step(float dt)
     m_solution.swapWithGrid(m_solutionNext);
     CPTimer::copyData().stop();
 
-    calculateWalls();
+    applyAction([&](int i, int j) {
+        if(m_ground(i,j) > m_solution(i,j)) {
+            m_solution(i,j) = m_ground(i,j)-0.01;
+            m_solutionPrevious(i,j) = m_ground(i,j)-0.001;
+        }
+    });
+
+    // calculateWalls();
+
+    // applySmoothing();
 }
 
 #if defined(__ARM_NEON)

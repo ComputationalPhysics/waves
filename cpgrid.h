@@ -53,11 +53,14 @@ public:
 
 enum class GridType {NotUsed = 0, Water = 1, Ground = 2};
 
+// typedef GLushort index_t;
+typedef GLuint index_t;
+
 class CPGrid
 {
 private:
     std::vector<CPPoint>      m_vertices;
-    std::vector<GLushort>     m_indices;
+    std::vector<index_t>     m_indices;
     std::vector<CPTriangle>   m_triangles;
     std::vector<float>        m_z;
     QString                   m_waterVertexShader;
@@ -87,6 +90,7 @@ public:
     void for_each(std::function<void(CPPoint &p, int i, int j)> action);
     void for_each(std::function<void(CPPoint &p, int i, int j, int gridSize)> action);
     void for_each(std::function<void(CPPoint &p, int i, int j, int gridSize, int index)> action);
+
     inline int index(int i, int j) {
         return i*gridSize() + j;
     }
@@ -95,7 +99,7 @@ public:
     int gridSize() { return m_gridSize; }
     void resize(int gridSize, float rMin, float rMax);
 
-    float &operator()(int i, int j, bool periodicBoundary) {
+    float &operator()(int i, int j, bool) {
         return m_vertices[index(idx(i), idx(j))].position[2];
     }
     float &operator()(int i, int j) {
@@ -121,6 +125,7 @@ public:
     void updateGridFromZ();
 
     void updateZFromGrid();
+    void createLand();
 };
 
 #endif // CPGRID_H
