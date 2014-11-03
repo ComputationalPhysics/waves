@@ -367,6 +367,23 @@ void CPGrid::createDoubleSlit()
     calculateNormals();
 }
 
+void CPGrid::createTopInMiddle(CPGrid &water)
+{
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float x = 2*(i-gridSize/2)/float(gridSize);
+        float y = 2*(j-gridSize/2)/float(gridSize);
+        float dr2 = x*x + y*y;
+        if(dr2 > 0.1) {
+            water(i,j) = 0.5;
+            p.position.setZ(0.5);
+        } else {
+            p.position.setZ(-0.5);
+        }
+    });
+
+    calculateNormals();
+}
+
 void CPGrid::createSinus()
 {
     for_each([&](CPPoint &p, int i, int j, int gridSize) {
@@ -387,6 +404,13 @@ void CPGrid::createSinus()
 void CPGrid::swapWithGrid(CPGrid &grid)
 {
     m_vertices.swap(grid.vertices());
+}
+
+void CPGrid::copyToGrid(CPGrid &grid)
+{
+    for_each([&](CPPoint &p, int i, int j) {
+        grid(i,j) = p.position[2];
+    });
 }
 
 void CPGrid::updateGridFromZ()

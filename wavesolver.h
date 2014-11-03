@@ -54,9 +54,9 @@ public:
     }
 
     inline float solutionPrevious(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj,true)) {
-            return m_solutionPrevious(i-di,j-dj,true);
-        }
+//        if(m_walls(i+di,j+dj,true)) {
+//            return m_solutionPrevious(i-di,j-dj,true);
+//        }
 
         return m_solutionPrevious(i+di,j+dj, true);
     }

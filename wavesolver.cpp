@@ -27,7 +27,7 @@ WaveSolver::WaveSolver() :
     setGridSize(256);
 
     float x0 = 0;
-    float y0 = -1.5;
+    float y0 = 0;
     float amplitude = 1.0;
     float standardDeviation = 0.1;
     double maxValue = 0;
@@ -47,9 +47,11 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    m_ground.createPerlin(15, 2, 10.0, -1.0);
+//    m_ground.createPerlin(15, 2, 10.0, -1.0);
 //     m_ground.createDoubleSlit();
 //     m_ground.createSinus();
+    m_ground.createTopInMiddle(m_solution);
+    m_solution.copyToGrid(m_solutionPrevious);
 //    calculateWalls();
 }
 
