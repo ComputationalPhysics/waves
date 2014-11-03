@@ -232,7 +232,6 @@ void CPGrid::setShaders()
             "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
 
-
     m_waterFragmentShader =
             "uniform highp vec3 targetdir; \n"
             "varying highp vec3 normal; \n"
