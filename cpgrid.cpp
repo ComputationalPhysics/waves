@@ -227,10 +227,11 @@ void CPGrid::setShaders()
             "void main(void) \n"
             "{ \n"
             "   vec4 modelViewPosition = modelViewMatrix * a_position;\n"
-            "   lightDirection = vec4(lightpos, 1.0) - modelViewPosition;\n"
+            "   lightDirection = lightpos - modelViewPosition.xyz;\n"
             "	normal = a_normal;\n"
             "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
+
 
     m_waterFragmentShader =
             "uniform highp vec3 targetdir; \n"
@@ -257,7 +258,7 @@ void CPGrid::setShaders()
             "void main(void) \n"
             "{ \n"
             "   vec4 modelViewPosition = modelViewMatrix * a_position;\n"
-            "   lightDirection = vec4(lightpos, 1.0) - modelViewPosition;\n"
+            "   lightDirection = lightpos - modelViewPosition.xyz;\n"
             "	normal = a_normal;\n"
             "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
