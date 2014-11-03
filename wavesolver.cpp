@@ -9,7 +9,7 @@
 #include <cmath>
 
 WaveSolver::WaveSolver() :
-    m_dampingFactor(0.1),
+    m_dampingFactor(0),
     m_gridSize(0),
     m_dr(0),
     m_rMin(-1),
@@ -28,15 +28,15 @@ WaveSolver::WaveSolver() :
 
     float x0 = 0;
     float y0 = -1.5;
-    float amplitude = 0.5;
+    float amplitude = 2;
     float standardDeviation = 0.1;
     double maxValue = 0;
     applyAction([&](int i, int j) {
         float x = m_rMin+i*m_dr;
         float y = m_rMin+j*m_dr;
 
-        // m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
-        // m_solution(i,j) = m_solutionPrevious(i,j);
+         m_solutionPrevious(i,j) = exp(-(pow(x - x0,2)+pow(y - y0,2))/(2*standardDeviation*standardDeviation));
+         m_solution(i,j) = m_solutionPrevious(i,j);
 
         maxValue = std::max(maxValue,fabs(m_solution(i,j)));
     });
@@ -47,10 +47,10 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
-    // m_ground.createDoubleSlit();
-    // m_ground.createSinus();
-    calculateWalls();
+//    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+     m_ground.createDoubleSlit();
+//     m_ground.createSinus();
+//    calculateWalls();
 }
 
 float WaveSolver::averageValue() const
@@ -87,9 +87,10 @@ void WaveSolver::calculateWalls()
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
             // int oldValue = m_walls(i,j);
-            m_walls(i,j) = m_ground(i,j) >=m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
+//            m_walls(i,j) = m_ground(i,j) >= m_solution(i,j);// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
+            m_walls(i,j) = m_ground(i,j) >= 0;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
             if(m_walls(i,j)) {
-                // m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
+                 m_solutionPrevious(i,j) = m_solution(i,j) = m_ground(i,j);
             }
         }
     }
@@ -167,6 +168,8 @@ void WaveSolver::step(float dt)
     float factor2 = -(1.0-0.5*m_dampingFactor*dt);
     float dtdtOverdrdr = dt*dt/(m_dr*m_dr);
 
+//    calculateWalls();
+
     CPTimer::temp().start();
     for(unsigned int i=0;i<gridSize();i++) {
 #pragma clang loop vectorize(enable) interleave(enable)
@@ -177,7 +180,10 @@ void WaveSolver::step(float dt)
             float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
             // Set value to zero if we have a wall.
-            m_solutionNext(i,j) = m_walls(i,j) ? 0 : factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+            m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+            if(m_ground(i,j) > 0 && m_solutionNext(i,j) < 0) {
+                m_solutionNext(i,j) = 0;
+            }
 #else
             float c = calcC(i,j); // wave speed
 
@@ -200,8 +206,6 @@ void WaveSolver::step(float dt)
     m_solutionPrevious.swapWithGrid(m_solution);
     m_solution.swapWithGrid(m_solutionNext);
     CPTimer::copyData().stop();
-
-    calculateWalls();
 }
 
 #if defined(__ARM_NEON)

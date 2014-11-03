@@ -39,7 +39,7 @@ public:
     }
 
     inline float solution(int i,int j, int di, int dj) {
-        if(m_walls(i+di,j+dj,true)) {
+        if(m_ground(i+di,j+dj,true) > m_solution(i+di, j+dj, true)) {
             return m_solution(i-di,j-dj,true);
         }
         return m_solution(i+di,j+dj, true);
