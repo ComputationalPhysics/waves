@@ -356,9 +356,11 @@ void CPGrid::createDoubleSlit()
         int slit2 = gridSize/2 - 6;
 
 //        wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
-        bool smallWall = (j==gridSize/2);
+        wall |= (j==gridSize/2 - 1);
+        wall |= (j==gridSize/2);
+        wall |= (j==gridSize/2 + 1);
 
-        float z = wall ? 1.0 : (smallWall ? 0.1 : -5);
+        float z = wall ? 0.1 : -1;
         p.position.setZ(z);
     });
 

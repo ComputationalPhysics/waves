@@ -35,13 +35,21 @@ public:
     void stepSIMD(float dt);
 
     inline float calcC(int i, int j) {
-        return std::max(-m_ground(i,j,true),1.0f);
+        float factor = 1;
+        if(m_ground(i,j,true) < 0) {
+            return -m_ground(i,j,true);
+        }
+        float depth = m_solution(i,j,true) - m_ground(i,j,true);
+        if(depth < -0.3) {
+            return 0.001f;
+        }
+        return std::min(std::max(factor * (depth - 0.5f), 0.01f), 1.0f);
     }
 
     inline float solution(int i,int j, int di, int dj) {
-        if(m_ground(i+di,j+dj,true) > m_solution(i+di, j+dj, true)) {
-            return m_solution(i-di,j-dj,true);
-        }
+        //        if(m_ground(i+di,j+dj,true) > m_solution(i+di, j+dj, true)) {
+        //            return m_solution(i-di,j-dj,true);
+        //        }
         return m_solution(i+di,j+dj, true);
     }
 
