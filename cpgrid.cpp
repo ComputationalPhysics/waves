@@ -227,7 +227,7 @@ void CPGrid::setShaders()
             "void main(void) \n"
             "{ \n"
             "   vec4 modelViewPosition = modelViewMatrix * a_position;\n"
-            "   lightDirection = vec4(lightpos, 1.0) - modelViewPosition;\n"
+            "   lightDirection = lightpos - modelViewPosition.xyz;\n"
             "	normal = a_normal;\n"
             "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
@@ -257,7 +257,7 @@ void CPGrid::setShaders()
             "void main(void) \n"
             "{ \n"
             "   vec4 modelViewPosition = modelViewMatrix * a_position;\n"
-            "   lightDirection = vec4(lightpos, 1.0) - modelViewPosition;\n"
+            "   lightDirection = lightpos - modelViewPosition.xyz;\n"
             "	normal = a_normal;\n"
             "   gl_Position = modelViewProjectionMatrix * a_position;\n"
             "}\n";
@@ -356,9 +356,9 @@ void CPGrid::createDoubleSlit()
         int slit2 = gridSize/2 - 6;
 
 //        wall |= (j==gridSize/2) && (abs(i-slit1)>=slitSize & abs(i-slit2)>=slitSize);
-        wall |= (j==gridSize/2);
+        bool smallWall = (j==gridSize/2);
 
-        float z = wall ? 0.1 : -5;
+        float z = wall ? 1.0 : (smallWall ? 0.1 : -5);
         p.position.setZ(z);
     });
 

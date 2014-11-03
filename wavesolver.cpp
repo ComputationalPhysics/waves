@@ -179,11 +179,15 @@ void WaveSolver::step(float dt)
             float ddy = solution(i,j,0,1) + solution(i,j,0,-1) ;
             float ddt_rest = factor2*m_solutionPrevious(i,j) + 2*m_solution(i,j);
 
-            // Set value to zero if we have a wall.
-            m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
-            if(m_ground(i,j) > 0 && m_solutionNext(i,j) < 0) {
-                m_solutionNext(i,j) = 0;
+            if(m_solution(i,j) < m_ground(i,j)) {
+                m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
+                if(m_solutionNext(i,j) > m_ground(i,j)) {
+                    m_solutionNext(i,j) = m_ground(i,j);
+                }
+            } else {
+                m_solutionNext(i,j) = factor*(dtdtOverdrdr*(ddx + ddy - 4*m_solution(i,j)) + ddt_rest + m_source(i,j));
             }
+
 #else
             float c = calcC(i,j); // wave speed
 
