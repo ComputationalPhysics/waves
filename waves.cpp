@@ -20,7 +20,7 @@ void WavesRenderer::resetProjection() {
     qreal aspect = qreal(m_viewportSize.width()) / qreal(m_viewportSize.height() ? m_viewportSize.height() : 1);
 
     // Set near plane to 3.0, far plane to 7.0, field of view 65 degrees
-    const qreal zNear = 1.0, zFar = 2000.0, fov = 65.0;
+    const qreal zNear = 1.0, zFar = 200.0, fov = 65.0;
 
     // Reset projection
     m_projectionMatrix.setToIdentity();
@@ -50,15 +50,24 @@ void WavesRenderer::paint() {
     glViewport(0, 0, m_viewportSize.width(), m_viewportSize.height());
 
     glClearColor(0, 0, 0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glFrontFace(GL_CCW);
+    glCullFace(GL_FRONT);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
 
     if(m_simulator) {
         QMatrix4x4 modelViewProjectionMatrix = m_projectionMatrix * m_modelViewMatrix;
-        QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
-        m_simulator->solver().box().render(modelViewProjectionMatrix);
+//        QMatrix4x4 lightModelViewProjectionMatrix = m_projectionMatrix * m_lightModelViewMatrix;
+//        m_simulator->solver().box().render(modelViewProjectionMatrix);
         m_simulator->solver().ground().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
         m_simulator->solver().solution().renderAsTriangles(modelViewProjectionMatrix, m_modelViewMatrix);
     }
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
 
 }
 Simulator *WavesRenderer::simulator() const
