@@ -41,6 +41,7 @@ class Waves : public QQuickItem
     Q_PROPERTY(bool previousStepCompleted READ previousStepCompleted NOTIFY previousStepCompletedChanged)
 public:
     Q_INVOKABLE void step();
+    Q_INVOKABLE void stepf(float dt);
     Waves();
     ~Waves();
 

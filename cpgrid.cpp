@@ -349,6 +349,31 @@ void CPGrid::createPerlin(unsigned int seed, float amplitude, float lengthScale,
     calculateNormals();
 }
 
+void CPGrid::createVolcano(CPGrid &water) {
+    for_each([&](CPPoint &p, int i, int j, int gridSize) {
+        float x = 2*(i-gridSize/2)/float(gridSize);
+        float y = 2*(j-gridSize/2)/float(gridSize);
+
+        float dr = x*x + y*y;
+        if(dr < 0.1) {
+            float z = 0.5 + 0.5*(1 - exp(-20*dr*dr));
+            p.position[2] = z;
+            water(i,j) = 0.5 + 0.5*(1 - exp(-20*0.1*0.1));
+        } else if(dr < 0.15) {
+            float z = 0.5 + 0.5*(1 - exp(-20*0.1*0.1));
+            p.position[2] = z;
+            water(i,j) = 0;
+        } else {
+            float val = 0.5 + 0.5*(1 - exp(-20*0.1*0.1));
+            float z = val - 5*(dr - 0.15);
+            p.position[2] = std::fmax(z, -0.1);
+            water(i,j) = 0;
+        }
+    });
+
+    calculateNormals();
+}
+
 void CPGrid::createDoubleSlit()
 {
     int slitSize = 3;
@@ -386,6 +411,11 @@ void CPGrid::createSinus()
 void CPGrid::swapWithGrid(CPGrid &grid)
 {
     m_vertices.swap(grid.vertices());
+}
+
+void CPGrid::copyToGrid(CPGrid &grid)
+{
+    grid.vertices() = m_vertices;
 }
 
 void CPGrid::updateGridFromZ()

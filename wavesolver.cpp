@@ -47,9 +47,11 @@ WaveSolver::WaveSolver() :
         m_ground(i,j) = -1;
     });
 
-    m_ground.createPerlin(15, 0.8, 10.0, -0.45);
+    // m_ground.createPerlin(15, 0.8, 10.0, -0.45);
     // m_ground.createDoubleSlit();
     // m_ground.createSinus();
+    m_ground.createVolcano(m_solution);
+    m_solution.copyToGrid(m_solutionPrevious);
     calculateWalls();
 }
 
@@ -86,9 +88,9 @@ void WaveSolver::calculateWalls()
     calculateMean();
     for(unsigned int i=0;i<gridSize();i++) {
         for(unsigned int j=0;j<gridSize();j++) {
-            // int oldValue = m_walls(i,j);
-            m_walls(i,j) = m_ground(i,j) >=m_averageValue;// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
-            if(m_walls(i,j)) {
+            int oldValue = m_walls(i,j);
+            m_walls(i,j) = m_ground(i,j) >= m_solution(i,j);// || i==0 || j==0 || i==gridSize()-1 || j==gridSize()-1;
+            if(oldValue != m_walls(i,j) && m_walls(i,j)) {
                 // m_solutionPrevious(i,j) = m_solution(i,j) = m_averageValue;
             }
         }

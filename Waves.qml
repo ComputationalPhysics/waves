@@ -11,7 +11,11 @@ Item {
         if(event.key === Qt.Key_Space) {
             waves.createRandomGauss()
         } else {
-            console.log("something else")
+            var dr = 0.05
+            var c_max = 1.0       			// Used to determine dt and Nt
+            var dt = 1.0*dr/Math.sqrt(2*c_max); 			// This guarantees (I guess) stability if c_max is correct
+            console.log("Stepping...")
+            waves.stepf(dt)
         }
     }
 

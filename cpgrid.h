@@ -118,9 +118,12 @@ public:
     void createDoubleSlit();
     void createSinus();
     void swapWithGrid(CPGrid &grid);
+    void copyToGrid(CPGrid &grid);
     void updateGridFromZ();
 
     void updateZFromGrid();
+    void createVolcano(CPGrid &water);
+
 };
 
 #endif // CPGRID_H

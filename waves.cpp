@@ -103,6 +103,12 @@ Waves::~Waves()
     cleanup();
 }
 
+void Waves::stepf(float dt) {
+    CPTimer::computeTimestep().start();
+    m_simulator.step(dt);
+    CPTimer::computeTimestep().stop();
+}
+
 void Waves::sync()
 {
     CPTimer::sync().start();
@@ -126,7 +132,7 @@ void Waves::sync()
     if(m_running) {
         // Step if running
         CPTimer::computeTimestep().start();
-        m_simulator.step(safeDt);
+        stepf(safeDt);
         CPTimer::computeTimestep().stop();
     }
 
