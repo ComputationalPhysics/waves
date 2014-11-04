@@ -374,9 +374,10 @@ void CPGrid::createTopInMiddle(CPGrid &water)
         float y = 2*(j-gridSize/2)/float(gridSize);
         float dr2 = x*x + y*y;
         if(dr2 > 0.1) {
-            water(i,j) = 0.5;
-            p.position.setZ(0.5);
+            water(i,j) = 0.1;
+            p.position.setZ(0.1);
         } else {
+            water(i,j) = 0.0;
             p.position.setZ(-0.5);
         }
     });
